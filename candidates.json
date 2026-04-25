@@ -1,7 +1,87 @@
 [
-  {"name": "Rohit Sharma", "skills": ["Sales", "CRM", "Negotiation"], "experience": 6},
-  {"name": "Priya Nair", "skills": ["Sales", "Communication"], "experience": 4},
-  {"name": "Anita Sharma", "skills": ["HR", "Communication"], "experience": 3},
-  {"name": "Deepa Iyer", "skills": ["Python", "SQL"], "experience": 4},
-  {"name": "Arjun Mehta", "skills": ["SQL", "Excel"], "experience": 5}
+  {
+    "name": "Rohit Sharma",
+    "skills": ["sales", "crm", "lead generation", "negotiation"],
+    "experience": 6
+  },
+  {
+    "name": "Priya Nair",
+    "skills": ["sales", "communication", "client handling"],
+    "experience": 4
+  },
+  {
+    "name": "Vikram Singh",
+    "skills": ["sales", "crm", "field sales", "target achievement"],
+    "experience": 5
+  },
+
+  {
+    "name": "Arjun Mehta",
+    "skills": ["sql", "excel", "data analysis"],
+    "experience": 5
+  },
+  {
+    "name": "Deepa Iyer",
+    "skills": ["python", "sql", "data visualization"],
+    "experience": 4
+  },
+  {
+    "name": "Akash Patel",
+    "skills": ["python", "sql", "excel", "power bi", "tableau"],
+    "experience": 3
+  },
+  {
+    "name": "Sneha Verma",
+    "skills": ["tableau", "data visualization", "sql"],
+    "experience": 3
+  },
+  {
+    "name": "Rahul Gupta",
+    "skills": ["machine learning", "python", "statistics"],
+    "experience": 2
+  },
+
+  {
+    "name": "Neha Joshi",
+    "skills": ["excel", "sql", "business analysis", "documentation"],
+    "experience": 3
+  },
+  {
+    "name": "Karthik Reddy",
+    "skills": ["business analysis", "stakeholder management", "excel"],
+    "experience": 4
+  },
+
+  {
+    "name": "Meena Kumari",
+    "skills": ["excel", "data entry", "reporting"],
+    "experience": 1
+  },
+  {
+    "name": "Suresh Kumar",
+    "skills": ["operations", "reporting", "process management"],
+    "experience": 2
+  },
+
+  {
+    "name": "Anjali Verma",
+    "skills": ["digital marketing", "seo", "social media"],
+    "experience": 3
+  },
+  {
+    "name": "Rakesh Singh",
+    "skills": ["marketing", "campaign management", "analytics"],
+    "experience": 5
+  },
+
+  {
+    "name": "Pooja Sharma",
+    "skills": ["hr", "recruitment", "communication"],
+    "experience": 2
+  },
+  {
+    "name": "Manish Yadav",
+    "skills": ["talent acquisition", "screening", "interviewing"],
+    "experience": 4
+  }
 ]
