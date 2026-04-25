@@ -9,7 +9,7 @@ load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
-
+# -------- EXPERIENCE -------- #
 def extract_experience(jd):
     jd = jd.lower()
 
@@ -24,14 +24,14 @@ def extract_experience(jd):
 
     return (2, 5)
 
-
+# -------- SAFE JSON -------- #
 def safe_json(text):
     try:
         return json.loads(text)
     except:
         return None
 
-
+# -------- JD PARSING -------- #
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
@@ -80,7 +80,7 @@ JD:
 
     return [s.lower() for s in skills[:6]], exp, role
 
-
+# -------- MATCHING -------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
@@ -102,7 +102,7 @@ def rule_score(candidate, req_skills, req_exp):
 
     return round(min(total, 100), 2), matched
 
-
+# -------- INTEREST -------- #
 def ai_assess_interest(ans):
     a = ans.lower()
 
@@ -114,7 +114,28 @@ def ai_assess_interest(ans):
         return 5
     return 0
 
+# -------- SINGLE PROFILE -------- #
+def extract_candidate_profile(text):
 
+    text = text.lower()
+
+    skill_db = [
+        "python","sql","excel","power bi","tableau",
+        "sales","crm","communication","machine learning"
+    ]
+
+    skills = [s for s in skill_db if s in text]
+
+    m = re.search(r'(\d+)\+?\s*year', text)
+    exp = int(m.group(1)) if m else 2
+
+    return {
+        "name": "External Candidate",
+        "skills": skills,
+        "experience": exp
+    }
+
+# -------- FINAL -------- #
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
