@@ -1,130 +1,76 @@
-import json
 import re
-import os
-from dotenv import load_dotenv
-from google import genai
-import streamlit as st
 
-# ---------- API SETUP ----------
-load_dotenv()
-api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
-client = genai.Client(api_key=api_key)
+# ---------- EXPERIENCE ----------
+def extract_experience(text):
+    text = text.lower()
 
-# ---------- EXPERIENCE EXTRACTION ----------
-def extract_experience(jd):
-    jd = jd.lower()
-
-    # range: 2–5 years
-    m = re.search(r'(\d+)\s*[-–]\s*(\d+)\s*year', jd)
+    m = re.search(r'(\d+)\s*[-–]\s*(\d+)\s*year', text)
     if m:
         return (int(m.group(1)), int(m.group(2)))
 
-    # single: 3+ years
-    m = re.search(r'(\d+)\+?\s*year', jd)
+    m = re.search(r'(\d+)\+?\s*year', text)
     if m:
         val = int(m.group(1))
         return (val, val + 2)
 
-    return (2, 5)
+    return (1, 3)
 
 
-# ---------- SAFE JSON ----------
-def safe_json(text):
-    try:
-        return json.loads(text)
-    except:
-        return None
+# ---------- JD PARSER ----------
+def extract_requirements(jd):
+    jd = jd.lower()
 
+    if "sales" in jd:
+        role = "Sales Executive"
+        skills = ["sales", "communication", "crm"]
 
-# ---------- JD PARSING ----------
-def ai_extract_requirements(jd):
+    elif "data" in jd:
+        role = "Data Analyst"
+        skills = ["python", "sql", "excel", "power bi"]
 
-    fallback_exp = extract_experience(jd)
-
-    prompt = f"""
-Extract role, skills, experience from the job description.
-
-Return JSON:
-{{"role":"","skills":[],"experience":[min,max]}}
-
-JD:
-{jd}
-"""
-
-    role, skills, exp = "", [], fallback_exp
-
-    try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt,
-            config={"response_mime_type": "application/json"}
-        )
-
-        data = safe_json(response.text) or {}
-
-        role = data.get("role", "")
-        skills = data.get("skills", [])
-        exp = tuple(data.get("experience", fallback_exp))
-
-    except:
-        pass
-
-    # ---------- fallback logic ----------
-    text = jd.lower()
-
-    if "data" in text:
-        role = role or "Data Analyst"
-        skills = skills or ["python", "sql", "excel", "power bi", "tableau"]
-
-    elif "sales" in text:
-        role = role or "Sales Executive"
-        skills = skills or ["sales", "communication", "crm"]
-
-    elif "business" in text:
-        role = role or "Business Analyst"
-        skills = skills or ["excel", "sql", "analysis", "documentation"]
+    elif "business" in jd:
+        role = "Business Analyst"
+        skills = ["excel", "sql", "analysis"]
 
     else:
-        role = role or "General Role"
-        skills = skills or ["communication"]
+        role = "General Role"
+        skills = ["communication"]
 
-    return [s.lower() for s in skills[:6]], exp, role
+    exp = extract_experience(jd)
+
+    return skills, exp, role
 
 
-# ---------- RESUME / PROFILE PARSER ----------
+# ---------- RESUME PARSER ----------
 def extract_candidate_profile(text):
-
     text = text.lower()
+    skills = []
 
-    skill_db = [
-        "python","sql","excel","power bi","tableau",
-        "sales","crm","communication","machine learning",
-        "business analysis","documentation","reporting"
-    ]
+    # direct match
+    keywords = ["sales", "crm", "python", "sql", "excel", "power bi"]
+    for k in keywords:
+        if k in text:
+            skills.append(k)
 
-    skills = [s for s in skill_db if s in text]
+    # smart inference
+    if any(w in text for w in ["client", "customer", "relationship", "negotiation", "handling"]):
+        skills.append("communication")
 
-    # experience extraction
-    m = re.search(r'(\d+)\+?\s*year', text)
-    exp = int(m.group(1)) if m else 2
+    matches = re.findall(r'(\d+)\+?\s*year', text)
+    exp = sum(map(int, matches)) if matches else 1
 
     return {
-        "name": "Candidate",
-        "skills": skills,
+        "skills": list(set(skills)),
         "experience": exp
     }
 
 
-# ---------- MATCH SCORING ----------
-def rule_score(candidate, req_skills, req_exp):
+# ---------- SCORING ----------
+def calculate_score(candidate, req_skills, req_exp):
+    matched = [s for s in candidate["skills"] if s in req_skills]
 
-    candidate_skills = [s.lower() for s in candidate["skills"]]
-    matched = [s for s in candidate_skills if s in req_skills]
+    skill_score = (len(matched) / len(req_skills)) * 70
 
-    # skill score (70%)
-    skill_score = (len(matched) / max(len(req_skills), 1)) * 70
-
-    # experience score (30%)
     min_exp, max_exp = req_exp
 
     if candidate["experience"] < min_exp:
@@ -134,43 +80,38 @@ def rule_score(candidate, req_skills, req_exp):
     else:
         exp_score = 20
 
-    total_score = skill_score + exp_score
+    total = skill_score + exp_score
 
-    return round(min(total_score, 100), 2), matched
+    return round(min(total, 100), 2), matched
 
 
-# ---------- FINAL ANALYSIS ----------
-def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
+# ---------- FINAL ----------
+def analyze(jd, resume_text):
+    req_skills, req_exp, role = extract_requirements(jd)
+    candidate = extract_candidate_profile(resume_text)
 
-    if skills is None:
-        skills, exp, role = ai_extract_requirements(jd)
+    score, matched = calculate_score(candidate, req_skills, req_exp)
 
-    score, matched = rule_score(candidate, skills, exp)
+    missing = [s for s in req_skills if s not in matched]
 
-    missing = [s for s in skills if s not in matched]
-
-    # ---------- decision ----------
-    if score >= 70:
+    if score >= 75:
         decision = "Recommended"
     elif score >= 55:
         decision = "Consider"
     else:
         decision = "Reject"
 
-    # ---------- explanation ----------
-    skill_text = ", ".join(matched[:3]) if matched else "limited matching skills"
-    missing_text = ", ".join(missing[:3]) if missing else "no major gaps"
-
-    reason = (
-        f"Candidate has {candidate['experience']} years experience and matches {skill_text}. "
-        f"Missing {missing_text}. Overall fit: {decision}."
-    )
+    reason = f"""
+    Candidate matches {len(matched)}/{len(req_skills)} skills.
+    Experience: {candidate['experience']} years.
+    Missing: {', '.join(missing)}
+    """
 
     return {
-        "match_score": score,
-        "matched_skills": matched if matched else ["None"],
-        "missing_skills": missing,
+        "score": score,
         "decision": decision,
+        "matched": matched,
+        "missing": missing,
         "reason": reason,
         "role": role
     }
