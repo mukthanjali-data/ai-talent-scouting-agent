@@ -11,14 +11,21 @@ st.markdown("""
 <style>
 .stApp {background: linear-gradient(to right,#0f172a,#1e293b);}
 h1,h2,h3,p {color:white;}
-textarea {background:#111827;color:white;}
-.stButton>button {background:#2563eb;color:white;}
+textarea {background:#111827;color:white;border-radius:10px;}
+.stButton>button {
+    background:#2563eb;
+    color:white;
+    border-radius:10px;
+    font-weight:600;
+}
+[data-testid="stFileUploader"] small {display:none;}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- HEADER ----------
 st.title("🤖 TalentAI Scout")
 st.caption("AI-powered intelligent hiring system")
+st.markdown("JD → AI Parsing → Matching → Ranking")
 
 # ---------- FILE READER ----------
 def read_file(file):
@@ -38,71 +45,81 @@ def read_file(file):
 
     return ""
 
-
+# ---------- LAYOUT ----------
 col1, col2 = st.columns(2)
 
-# ---------- LEFT ----------
+# =========================================================
+# 🔵 LEFT: FIND CANDIDATES (JD ONLY)
+# =========================================================
 with col1:
     st.subheader("🔍 Find Candidates")
 
-    jd_file = st.file_uploader("Upload JD", ["pdf","docx","txt"])
-    jd_text = st.text_area("Paste JD")
+    jd_file = st.file_uploader(
+        "Upload JD", ["pdf","docx","txt"], key="jd_left"
+    )
+    jd_text = st.text_area("Paste JD", key="jd_text_left")
 
-    if st.button("Find Candidates"):
-        if jd_file:
-            jd_text = read_file(jd_file)
+    jd = read_file(jd_file) if jd_file else jd_text
 
-        if not jd_text:
-            st.warning("Provide JD")
-        else:
-            skills, exp, role = extract_requirements(jd_text)
+    if st.button("Find Candidates", key="find_btn"):
 
-            st.success(f"{role} | Exp: {exp[0]}–{exp[1]}")
+        if not jd.strip():
+            st.warning("Please provide JD")
+            st.stop()
 
-            with open("candidates.json") as f:
-                data = json.load(f)
+        skills, exp, role = extract_requirements(jd)
 
-            results = []
+        st.success(f"{role} | Exp: {exp[0]}–{exp[1]} yrs")
 
-            for c in data:
-                text = " ".join(c["skills"]) + f" {c['experience']} years"
-                res = analyze(jd_text, text)
-                results.append((c["name"], res["score"]))
+        with open("candidates.json") as f:
+            data = json.load(f)
 
-            results.sort(key=lambda x: x[1], reverse=True)
+        results = []
 
-            for name, score in results:
-                st.write(f"{name} — {score}%")
+        for c in data:
+            text = " ".join(c["skills"]) + f" {c['experience']} years"
+            res = analyze(jd, text)
 
+            results.append({
+                "name": c["name"],
+                "score": res["score"]
+            })
 
-# ---------- RIGHT ----------
+        results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+        for r in results:
+            st.write(f"{r['name']} — {r['score']}%")
+
+# =========================================================
+# 🟢 RIGHT: EVALUATE CANDIDATE (RESUME ONLY)
+# =========================================================
 with col2:
     st.subheader("🎯 Evaluate Candidate")
 
-    resume_file = st.file_uploader("Upload Resume", ["pdf","docx","txt"])
-    resume_text = st.text_area("Paste Resume")
+    resume_file = st.file_uploader(
+        "Upload Resume", ["pdf","docx","txt"], key="resume_upload"
+    )
+    resume_text = st.text_area("Paste Resume", key="resume_text")
 
-    jd_file2 = st.file_uploader("Upload JD", ["pdf","docx","txt"])
-    jd_text2 = st.text_area("Paste JD")
+    resume = read_file(resume_file) if resume_file else resume_text
 
-    if st.button("Evaluate Candidate"):
+    if st.button("Evaluate Candidate", key="eval_btn"):
 
-        if resume_file:
-            resume_text = read_file(resume_file)
+        if not resume.strip():
+            st.warning("Please provide Resume")
+            st.stop()
 
-        if jd_file2:
-            jd_text2 = read_file(jd_file2)
+        if not jd.strip():
+            st.warning("Please provide JD on left side")
+            st.stop()
 
-        if not resume_text or not jd_text2:
-            st.warning("Provide JD + Resume")
-        else:
-            result = analyze(jd_text2, resume_text)
+        result = analyze(jd, resume)
 
-            st.success("Evaluation Complete")
+        st.success("Evaluation Complete")
 
-            st.write(f"Score: {result['score']}%")
-            st.write(f"Decision: {result['decision']}")
+        st.write(f"🎯 Score: {result['score']}%")
+        st.write(f"📌 Decision: {result['decision']}")
 
-            st.write("Matched:", result["matched"])
-            st.write("Missing:", result["missing"])
-            st.write(result["reason"])
+        st.write("✅ Matched Skills:", result["matched"])
+        st.write("❌ Missing Skills:", result["missing"])
+        st.write("🧠 Reason:", result["reason"])
