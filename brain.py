@@ -89,17 +89,20 @@ def rule_score(candidate, req_skills, req_exp):
     c_skills = [s.lower() for s in candidate["skills"]]
     matched = [s for s in c_skills if s in req_skills]
 
-    skill_score = (len(matched) / max(len(req_skills), 1)) * 60 if matched else 25
+    # Skill scoring (strong differentiation)
+    skill_ratio = len(matched) / max(len(req_skills), 1)
+    skill_score = skill_ratio * 70
 
-    if len(matched) >= 2:
+    if len(matched) >= 3:
         skill_score += 10
 
+    # Experience scoring
     min_exp, max_exp = req_exp
 
     if candidate["experience"] < min_exp:
         exp_score = 10
     elif min_exp <= candidate["experience"] <= max_exp:
-        exp_score = 25
+        exp_score = 30
     else:
         exp_score = 20
 
@@ -129,9 +132,9 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     score, matched = rule_score(candidate, skills, exp)
 
-    if score > 65:
+    if score >= 70:
         level = "strong"
-    elif score > 50:
+    elif score >= 55:
         level = "good"
     else:
         level = "weak"
@@ -143,7 +146,7 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     reason = (
         f"{candidate['name']} has {candidate['experience']} years experience and matches {skill_text}. "
-        f"However, there are {gap}. This candidate is a {level} fit based on alignment of required skills and experience."
+        f"However, there are {gap}. This candidate shows {level} alignment with the role requirements."
     )
 
     return {
