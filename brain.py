@@ -1,51 +1,43 @@
-from google import genai
 import json
 import os
 import re
 from dotenv import load_dotenv
+from google import genai
+import streamlit as st
 
 load_dotenv()
+api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 
-# Initialize Gemini client
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
-# ---------------------------
-# 🔹 Fallback (Non-AI)
-# ---------------------------
-def extract_skills(jd_text):
-    skills_list = ["Python", "SQL", "Excel", "Power BI", "Tableau", "Machine Learning"]
-    found = [s for s in skills_list if s.lower() in jd_text.lower()]
-
-    # Smart fallback
-    if not found:
-        if "data analyst" in jd_text.lower():
-            return ["Python", "SQL", "Excel"]
-        return ["Python"]
-
-    return found
+client = genai.Client(api_key=api_key)
 
 
-def extract_experience(jd_text):
-    match = re.search(r'(\d+)\s*year', jd_text.lower())
-    return int(match.group(1)) if match else 0
+def extract_experience(jd):
+    match = re.search(r'(\d+)\+?\s*year', jd.lower())
+    return int(match.group(1)) if match else 2
 
 
-# ---------------------------
-# 🤖 AI: Extract JD Requirements
-# ---------------------------
-def ai_extract_requirements(jd_text):
+def safe_json(text):
+    try:
+        return json.loads(text)
+    except:
+        return None
+
+
+def ai_extract_requirements(jd):
+
+    fallback_exp = extract_experience(jd)
+
     prompt = f"""
-    Extract required skills and years of experience from this job description.
+Extract role, skills, experience from JD.
 
-    Return ONLY JSON:
-    {{
-        "skills": [],
-        "experience": int
-    }}
+Return JSON:
+{{"role":"","skills":[],"experience":number}}
 
-    Job Description:
-    {jd_text}
-    """
+JD:
+{jd}
+"""
+
+    role, skills, exp = "", [], fallback_exp
 
     try:
         response = client.models.generate_content(
@@ -54,93 +46,103 @@ def ai_extract_requirements(jd_text):
             config={"response_mime_type": "application/json"}
         )
 
-        data = json.loads(response.text)
+        data = safe_json(response.text) or {}
 
+        role = data.get("role", "")
         skills = data.get("skills", [])
-        exp = data.get("experience", 0)
+        exp = int(data.get("experience", fallback_exp))
 
-        # fallback safety
-        if not skills:
-            skills = extract_skills(jd_text)
+    except:
+        pass
 
-        return skills, exp
+    text = jd.lower()
 
-    except Exception:
-        return extract_skills(jd_text), extract_experience(jd_text)
+    if "sales" in text:
+        role = role or "Sales Executive"
+        skills = skills or ["sales", "communication", "crm"]
+
+    elif "data" in text:
+        role = role or "Data Analyst"
+        skills = skills or ["python", "sql", "excel"]
+
+    else:
+        role = role or "General Role"
+        skills = skills or ["communication"]
+
+    return skills[:5], exp, role
 
 
-# ---------------------------
-# 🤖 AI: Generate Recruiter Insight
-# ---------------------------
-def ai_generate_reason(jd_text, candidate, match_score):
+def rule_score(candidate, req_skills, req_exp):
+
+    c_skills = [s.lower() for s in candidate["skills"]]
+    r_skills = [s.lower() for s in req_skills]
+
+    matched = [s for s in c_skills if s in r_skills]
+
+    skill_score = (len(matched) / max(len(r_skills), 1)) * 50 if matched else 20
+    exp_score = min((candidate["experience"] / max(req_exp, 1)) * 30, 30)
+
+    return round(skill_score + exp_score, 2), matched
+
+
+def ai_match(jd, candidate):
+
     prompt = f"""
-    You are an expert recruiter.
+Evaluate candidate for job.
 
-    Job Description:
-    {jd_text}
+JD:
+{jd}
 
-    Candidate Profile:
-    {candidate}
+Candidate:
+Skills: {candidate['skills']}
+Experience: {candidate['experience']}
 
-    Match Score: {match_score}
-
-    Explain in 1-2 short lines why this candidate is a good or bad fit.
-    """
+Return JSON:
+{{"score":number,"reason":""}}
+"""
 
     try:
         response = client.models.generate_content(
             model="gemini-1.5-flash",
-            contents=prompt
+            contents=prompt,
+            config={"response_mime_type": "application/json"}
         )
-        return response.text.strip()
 
-    except Exception:
-        return f"{candidate['name']} shows moderate alignment with the job."
+        data = safe_json(response.text)
+        return data.get("score"), data.get("reason")
+
+    except:
+        return None, None
 
 
-# ---------------------------
-# 🎯 MAIN FUNCTION
-# ---------------------------
-def analyze_job_and_match(jd_text, candidate):
-    try:
-        # 🔥 AI-powered JD understanding
-        required_skills, required_exp = ai_extract_requirements(jd_text)
+def ai_assess_interest(ans):
 
-        candidate_skills = candidate["skills"]
-        candidate_exp = candidate["experience"]
+    if "yes" in ans.lower():
+        return 10
+    elif "no" in ans.lower():
+        return -10
+    return 5
 
-        matched = list(set(candidate_skills) & set(required_skills))
-        missing = list(set(required_skills) - set(candidate_skills))
 
-        # 🎯 Skill score
-        if required_skills:
-            skill_score = len(matched) / len(required_skills)
-        else:
-            skill_score = 1
+def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
-        # 🎯 Experience score
-        if required_exp > 0:
-            exp_score = min(candidate_exp / required_exp, 1)
-        else:
-            exp_score = 1
+    if skills is None:
+        skills, exp, role = ai_extract_requirements(jd)
 
-        # 🎯 Final match score
-        match_score = round((0.7 * skill_score + 0.3 * exp_score) * 100, 2)
+    rule_s, matched = rule_score(candidate, skills, exp)
 
-        # 🤖 AI reasoning
-        note = ai_generate_reason(jd_text, candidate, match_score)
+    ai_s, ai_reason = ai_match(jd, candidate)
 
-        return {
-            "match_score": match_score,
-            "matched_skills": matched if matched else ["None"],
-            "missing_skills": missing,
-            "recruiter_note": note
-        }
+    if ai_s:
+        final = round(0.6 * ai_s + 0.4 * rule_s, 2)
+        reason = ai_reason
+    else:
+        final = rule_s
+        reason = f"{candidate['name']} matches {matched}"
 
-    except Exception as e:
-        return {
-            "match_score": 0,
-            "matched_skills": [],
-            "missing_skills": [],
-            "recruiter_note": f"Error: {str(e)}"
-        }
+    return {
+        "match_score": final,
+        "matched_skills": matched,
+        "reason": reason,
+        "role": role
+    }
