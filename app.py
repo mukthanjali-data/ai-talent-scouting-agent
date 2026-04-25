@@ -1,3 +1,32 @@
+st.markdown("""
+<style>
+body {
+    background-color: #0f172a;
+}
+
+h1, h2, h3 {
+    color: #f8fafc;
+}
+
+.stApp {
+    background: linear-gradient(to right, #0f172a, #1e293b);
+    color: #e2e8f0;
+}
+
+.stButton>button {
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+}
+
+.stMetric {
+    background-color: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 import streamlit as st
 import json
 from PyPDF2 import PdfReader
