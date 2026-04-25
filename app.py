@@ -9,23 +9,14 @@ st.set_page_config(layout="wide")
 # ---------- CSS ----------
 st.markdown("""
 <style>
-.stApp {
-    background: linear-gradient(135deg,#0f172a,#1e293b);
-}
-h1,h2,h3,p,label {
-    color:#f8fafc !important;
-}
+.stApp {background: linear-gradient(135deg,#0f172a,#1e293b);}
+h1,h2,h3,p,label {color:#f8fafc !important;}
 .stButton>button {
     background: linear-gradient(to right,#3b82f6,#2563eb);
-    color:white;
-    border-radius:10px;
-    padding:10px;
-    font-weight:600;
+    color:white;border-radius:10px;padding:10px;font-weight:600;
 }
 [data-testid="stExpander"] {
-    background:#111827;
-    border-radius:12px;
-    border:1px solid #374151;
+    background:#111827;border-radius:12px;border:1px solid #374151;
 }
 footer {visibility:hidden;}
 </style>
@@ -35,14 +26,12 @@ footer {visibility:hidden;}
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# ---------- SIDEBAR ----------
-st.sidebar.header("⚙️ Recruiter Settings")
-
-match_weight = st.sidebar.slider("Match Weight", 0.5, 1.0, 0.8)
-min_exp = st.sidebar.slider("Min Experience", 0, 10, 0)
-max_exp = st.sidebar.slider("Max Experience", 0, 10, 10)
-top_n = st.sidebar.slider("Top Candidates", 1, 10, 5)
-threshold = st.sidebar.slider("Min Score %", 0, 100, 40)
+# ---------- HELPERS ----------
+def read_pdf(file):
+    if file:
+        reader = PdfReader(file)
+        return "".join([p.extract_text() or "" for p in reader.pages])
+    return ""
 
 # ---------- HEADER ----------
 st.title("🤖 TalentAI Scout")
@@ -50,100 +39,97 @@ st.caption("AI-powered intelligent hiring system")
 
 st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
 
-# ---------- INPUT ----------
-uploaded = st.file_uploader("Upload JD", ["pdf","txt"])
-jd_text = st.text_area("Paste JD", height=180)
+# ---------- LAYOUT ----------
+col1, col2 = st.columns(2)
 
-def read_pdf(file):
-    if file:
-        reader = PdfReader(file)
-        return "".join([p.extract_text() or "" for p in reader.pages])
-    return ""
+# =========================================================
+# 🔍 LEFT SIDE → FIND CANDIDATES
+# =========================================================
+with col1:
+    st.subheader("🔍 Find Candidates")
 
-jd = read_pdf(uploaded) if uploaded else jd_text
+    jd_file_left = st.file_uploader("Upload JD", ["pdf","txt"], key="jd_left")
+    jd_text_left = st.text_area("Paste JD", key="jd_text_left")
 
-# ---------- FIND ----------
-if st.button("🔍 Find Candidates"):
+    jd_left = read_pdf(jd_file_left) if jd_file_left else jd_text_left
 
-    if not jd.strip():
-        st.warning("Please enter JD")
-        st.stop()
+    if st.button("Find Candidates"):
 
-    skills, exp, role = ai_extract_requirements(jd)
+        if not jd_left.strip():
+            st.warning("Enter JD")
+            st.stop()
 
-    st.success(f"🎯 Role: {role} | ⏳ Exp: {exp[0]}–{exp[1]} yrs")
+        skills, exp, role = ai_extract_requirements(jd_left)
 
-    results = []
+        st.success(f"Role: {role} | Exp: {exp[0]}–{exp[1]} yrs")
 
-    for c in candidates:
+        results = []
 
-        if not (min_exp <= c["experience"] <= max_exp):
-            continue
+        for c in candidates:
 
-        r = analyze_job_and_match(jd, c, skills, exp, role)
+            r = analyze_job_and_match(jd_left, c, skills, exp, role)
 
-        interest = 50 + c["experience"] * 2
+            interest = 50 + c["experience"] * 2
+            final = round(0.8*r["match_score"] + 0.2*interest,2)
 
-        final = round(match_weight*r["match_score"] + (1-match_weight)*interest,2)
+            decision = "Recommended" if r["match_score"]>=70 else "Consider" if r["match_score"]>=55 else "Reject"
 
-        decision = "Recommended" if r["match_score"]>=70 else "Consider" if r["match_score"]>=55 else "Reject"
+            results.append({
+                "name":c["name"],
+                "score":final,
+                "decision":decision,
+                "skills":r["matched_skills"],
+                "missing":r["missing_skills"]
+            })
 
-        results.append({
-            "name":c["name"],
-            "score":final,
-            "decision":decision,
-            "match":r["match_score"],
-            "skills":r["matched_skills"],
-            "missing":r["missing_skills"]
-        })
+        results = sorted(results,key=lambda x:x["score"],reverse=True)
 
-    results = sorted(results,key=lambda x:x["score"],reverse=True)
-    results = [r for r in results if r["score"]>=threshold][:top_n]
+        for r in results:
+            with st.expander(f"{r['name']} — {r['score']}%"):
+                st.write("Decision:",r["decision"])
+                st.write("Matched:",r["skills"])
+                st.write("Missing:",r["missing"][:3])
 
-    if not results:
-        st.warning("No candidates match filters")
-        st.stop()
 
-    st.success(f"🏆 Top Candidate: {results[0]['name']} ({results[0]['score']}%)")
+# =========================================================
+# 🎯 RIGHT SIDE → EVALUATE SINGLE CANDIDATE
+# =========================================================
+with col2:
+    st.subheader("🎯 Evaluate Candidate")
 
-    for r in results:
-        with st.expander(f"{r['name']} — {r['score']}%"):
-            st.write("🎯 Decision:",r["decision"])
-            st.write("✅ Matched Skills:",r["skills"])
-            st.write("❌ Missing Skills:",r["missing"][:3])
+    jd_file_right = st.file_uploader("Upload JD", ["pdf","txt"], key="jd_right")
+    jd_text_right = st.text_area("Paste JD", key="jd_text_right")
 
-    df = pd.DataFrame(results)
-    st.download_button("📥 Download CSV", df.to_csv(index=False), "results.csv")
+    resume_file = st.file_uploader("Upload Resume", ["pdf","txt"])
+    linkedin_text = st.text_area("Paste LinkedIn/Profile")
 
-# ---------- SINGLE EVALUATION ----------
-st.markdown("---")
-st.subheader("🔍 Evaluate Candidate")
+    jd_right = read_pdf(jd_file_right) if jd_file_right else jd_text_right
 
-profile = st.text_area("Paste LinkedIn / Resume")
+    if st.button("Evaluate Candidate"):
 
-resume_file = st.file_uploader("Upload Resume", ["pdf","txt"])
+        if not jd_right.strip():
+            st.warning("Enter JD")
+            st.stop()
 
-if st.button("Evaluate Candidate"):
+        profile_text = linkedin_text if linkedin_text else read_pdf(resume_file)
 
-    text = profile if profile else read_pdf(resume_file)
+        if not profile_text:
+            st.warning("Provide Resume or LinkedIn text")
+            st.stop()
 
-    if not text:
-        st.warning("Provide profile or resume")
-        st.stop()
+        candidate = extract_candidate_profile(profile_text)
 
-    candidate = extract_candidate_profile(text)
+        skills, exp, role = ai_extract_requirements(jd_right)
 
-    skills, exp, role = ai_extract_requirements(jd)
+        r = analyze_job_and_match(jd_right, candidate, skills, exp, role)
 
-    r = analyze_job_and_match(jd,candidate,skills,exp,role)
+        score = r["match_score"]
 
-    score = r["match_score"]
+        decision = "Recommended" if score>=70 else "Consider" if score>=55 else "Reject"
 
-    decision = "Recommended" if score>=70 else "Consider" if score>=55 else "Reject"
+        st.success("Evaluation Complete")
 
-    st.success("Evaluation Complete")
-
-    st.write(f"🎯 Score: {score}%")
-    st.write(f"📌 Decision: {decision}")
-    st.write("✅ Matched Skills:",r["matched_skills"])
-    st.write("❌ Missing Skills:",r["missing_skills"][:3])
+        st.write(f"Score: {score}%")
+        st.write(f"Decision: {decision}")
+        st.write("Matched:",r["matched_skills"])
+        st.write("Missing:",r["missing_skills"][:3])
