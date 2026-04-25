@@ -10,10 +10,12 @@ api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 
 client = genai.Client(api_key=api_key)
 
-
+# ─────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────
 def extract_experience(jd):
-    match = re.search(r'(\d+)\+?\s*year', jd.lower())
-    return int(match.group(1)) if match else 2
+    m = re.search(r'(\d+)\+?\s*year', jd.lower())
+    return int(m.group(1)) if m else 2
 
 
 def safe_json(text):
@@ -23,12 +25,15 @@ def safe_json(text):
         return None
 
 
+# ─────────────────────────────────────────
+# JD Parsing (AI + fallback)
+# ─────────────────────────────────────────
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
-Extract role, skills, experience from JD.
+Extract job role, skills, experience.
 
 Return JSON:
 {{"role":"","skills":[],"experience":number}}
@@ -40,13 +45,12 @@ JD:
     role, skills, exp = "", [], fallback_exp
 
     try:
-        response = client.models.generate_content(
+        resp = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
-
-        data = safe_json(response.text) or {}
+        data = safe_json(resp.text) or {}
 
         role = data.get("role", "")
         skills = data.get("skills", [])
@@ -69,61 +73,77 @@ JD:
         role = role or "General Role"
         skills = skills or ["communication"]
 
-    return skills[:5], exp, role
+    return [s.lower() for s in skills[:5]], exp, role
 
 
+# ─────────────────────────────────────────
+# Rule Scoring
+# ─────────────────────────────────────────
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
-    r_skills = [s.lower() for s in req_skills]
+    matched = [s for s in c_skills if s in req_skills]
 
-    matched = [s for s in c_skills if s in r_skills]
-
-    skill_score = (len(matched) / max(len(r_skills), 1)) * 50 if matched else 20
+    skill_score = (len(matched) / max(len(req_skills), 1)) * 50 if matched else 20
     exp_score = min((candidate["experience"] / max(req_exp, 1)) * 30, 30)
 
     return round(skill_score + exp_score, 2), matched
 
 
+# ─────────────────────────────────────────
+# AI Matching (semantic)
+# ─────────────────────────────────────────
 def ai_match(jd, candidate):
 
     prompt = f"""
-Evaluate candidate for job.
+You are a recruiter.
 
 JD:
 {jd}
 
 Candidate:
 Skills: {candidate['skills']}
-Experience: {candidate['experience']}
+Experience: {candidate['experience']} years
+
+Evaluate semantically (consider related tools).
 
 Return JSON:
 {{"score":number,"reason":""}}
 """
 
     try:
-        response = client.models.generate_content(
+        resp = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
 
-        data = safe_json(response.text)
+        data = safe_json(resp.text)
         return data.get("score"), data.get("reason")
 
     except:
         return None, None
 
 
+# ─────────────────────────────────────────
+# Interest Scoring
+# ─────────────────────────────────────────
 def ai_assess_interest(ans):
 
-    if "yes" in ans.lower():
+    a = ans.lower()
+
+    if "yes" in a or "interested" in a:
         return 10
-    elif "no" in ans.lower():
+    elif "no" in a:
         return -10
-    return 5
+    elif "maybe" in a:
+        return 5
+    return 0
 
 
+# ─────────────────────────────────────────
+# MAIN PIPELINE
+# ─────────────────────────────────────────
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
@@ -134,7 +154,7 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
     ai_s, ai_reason = ai_match(jd, candidate)
 
     if ai_s:
-        final = round(0.6 * ai_s + 0.4 * rule_s, 2)
+        final = round(0.65 * ai_s + 0.35 * rule_s, 2)
         reason = ai_reason
     else:
         final = rule_s
@@ -142,7 +162,7 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     return {
         "match_score": final,
-        "matched_skills": matched,
+        "matched_skills": matched if matched else ["None"],
         "reason": reason,
         "role": role
     }
