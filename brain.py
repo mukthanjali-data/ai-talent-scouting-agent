@@ -1,6 +1,6 @@
 import json
-import os
 import re
+import os
 from dotenv import load_dotenv
 from google import genai
 import streamlit as st
@@ -9,7 +9,7 @@ load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
-# -------- EXPERIENCE -------- #
+# ---------- EXPERIENCE ----------
 def extract_experience(jd):
     jd = jd.lower()
 
@@ -20,24 +20,24 @@ def extract_experience(jd):
     m = re.search(r'(\d+)\+?\s*year', jd)
     if m:
         val = int(m.group(1))
-        return (val, val + 2)
+        return (val, val+2)
 
     return (2, 5)
 
-# -------- SAFE JSON -------- #
+# ---------- SAFE JSON ----------
 def safe_json(text):
     try:
         return json.loads(text)
     except:
         return None
 
-# -------- JD PARSER -------- #
+# ---------- JD PARSER ----------
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
-Extract role, skills, experience.
+Extract job role, skills, experience.
 
 Return JSON:
 {{"role":"","skills":[],"experience":[min,max]}}
@@ -68,11 +68,11 @@ JD:
 
     if "data" in text:
         role = role or "Data Analyst"
-        skills = skills or ["python", "sql", "excel", "power bi", "tableau"]
+        skills = skills or ["python","sql","excel","power bi","tableau"]
 
     elif "sales" in text:
         role = role or "Sales Executive"
-        skills = skills or ["sales", "communication", "crm"]
+        skills = skills or ["sales","communication","crm"]
 
     else:
         role = role or "General Role"
@@ -80,40 +80,7 @@ JD:
 
     return [s.lower() for s in skills[:6]], exp, role
 
-# -------- MATCH SCORE -------- #
-def rule_score(candidate, req_skills, req_exp):
-
-    c_skills = [s.lower() for s in candidate["skills"]]
-    matched = [s for s in c_skills if s in req_skills]
-
-    skill_ratio = len(matched) / max(len(req_skills), 1)
-    skill_score = skill_ratio * 70
-
-    min_exp, max_exp = req_exp
-
-    if candidate["experience"] < min_exp:
-        exp_score = 10
-    elif min_exp <= candidate["experience"] <= max_exp:
-        exp_score = 30
-    else:
-        exp_score = 20
-
-    total = skill_score + exp_score
-
-    return round(min(total, 100), 2), matched
-
-# -------- INTEREST -------- #
-def ai_assess_interest(ans):
-    a = ans.lower()
-    if "yes" in a:
-        return 10
-    elif "no" in a:
-        return -10
-    elif "maybe" in a:
-        return 5
-    return 0
-
-# -------- PROFILE PARSER -------- #
+# ---------- PROFILE PARSER ----------
 def extract_candidate_profile(text):
 
     text = text.lower()
@@ -129,12 +96,30 @@ def extract_candidate_profile(text):
     exp = int(m.group(1)) if m else 2
 
     return {
-        "name": "External Candidate",
+        "name": "Candidate",
         "skills": skills,
         "experience": exp
     }
 
-# -------- FINAL MATCH -------- #
+# ---------- SCORING ----------
+def rule_score(candidate, req_skills, req_exp):
+
+    matched = [s for s in candidate["skills"] if s in req_skills]
+
+    skill_score = (len(matched)/max(len(req_skills),1))*70
+
+    min_exp, max_exp = req_exp
+
+    if candidate["experience"] < min_exp:
+        exp_score = 10
+    elif min_exp <= candidate["experience"] <= max_exp:
+        exp_score = 30
+    else:
+        exp_score = 20
+
+    return round(skill_score + exp_score,2), matched
+
+# ---------- FINAL ----------
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
@@ -146,7 +131,7 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     return {
         "match_score": score,
-        "matched_skills": matched,
+        "matched_skills": matched if matched else ["None"],
         "missing_skills": missing,
         "role": role
     }
