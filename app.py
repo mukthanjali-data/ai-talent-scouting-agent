@@ -8,7 +8,7 @@ st.set_page_config(layout="wide")
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# Session
+# Session state
 for k, v in {
     "results": [],
     "chat_step": 0,
@@ -39,7 +39,6 @@ jd_input = st.text_area("📋 Or paste JD")
 jd = read_file(uploaded) if uploaded else jd_input
 
 
-# ---------- FIND ---------- #
 if st.button("Find Candidates"):
 
     if not jd.strip():
@@ -48,7 +47,7 @@ if st.button("Find Candidates"):
 
     skills, exp, role = ai_extract_requirements(jd)
 
-    st.success(f"Role: {role} | Exp: {exp} yrs | Skills: {', '.join(skills)}")
+    st.success(f"Role: {role} | Exp: {exp[0]}–{exp[1]} yrs | Skills: {', '.join(skills)}")
 
     results = []
 
@@ -74,7 +73,6 @@ if st.button("Find Candidates"):
     st.session_state.results = sorted(results, key=lambda x: x["final"], reverse=True)
 
 
-# ---------- DISPLAY ---------- #
 if st.session_state.results:
 
     for r in st.session_state.results:
@@ -99,7 +97,6 @@ if st.session_state.results:
                 st.session_state.interest_scores[r["name"]] = r["interest"]
 
 
-# ---------- CHAT ---------- #
 if st.session_state.active_chat:
 
     questions = [
