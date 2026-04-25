@@ -9,55 +9,33 @@ st.set_page_config(layout="wide")
 st.markdown("""
 <style>
 
-/* ===== AUTO THEME SUPPORT ===== */
-
-/* DARK MODE */
-@media (prefers-color-scheme: dark) {
-    .stApp {
-        background: linear-gradient(to right, #0f172a, #1e293b);
-        color: #f8fafc;
-    }
-
-    textarea, input {
-        background-color: #111827 !important;
-        color: #f9fafb !important;
-        border: 1px solid #374151 !important;
-    }
-
-    [data-testid="stFileUploader"] {
-        background-color: #111827;
-        border: 1px solid #374151;
-    }
-
-    [data-testid="stExpander"] {
-        background-color: #111827;
-    }
+/* MAIN BACKGROUND */
+.stApp {
+    background: linear-gradient(to right, #0f172a, #1e293b);
 }
 
-/* LIGHT MODE */
-@media (prefers-color-scheme: light) {
-    .stApp {
-        background: #f8fafc;
-        color: #0f172a;
-    }
-
-    textarea, input {
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border: 1px solid #d1d5db !important;
-    }
-
-    [data-testid="stFileUploader"] {
-        background-color: #ffffff;
-        border: 1px solid #d1d5db;
-    }
-
-    [data-testid="stExpander"] {
-        background-color: #ffffff;
-    }
+/* TEXT */
+h1, h2, h3, p {
+    color: #f8fafc;
 }
 
-/* BUTTON (COMMON) */
+/* INPUT BOX */
+textarea, input {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
+    border-radius: 10px !important;
+    border: 1px solid #374151 !important;
+}
+
+/* FILE UPLOADER */
+[data-testid="stFileUploader"] {
+    background-color: #111827;
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid #374151;
+}
+
+/* BUTTON */
 .stButton>button {
     background: linear-gradient(to right, #2563eb, #3b82f6);
     color: white;
@@ -66,9 +44,16 @@ st.markdown("""
     font-weight: 600;
 }
 
-/* SHADOW */
+/* CARD EFFECT */
 [data-testid="stFileUploader"], textarea {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* EXPANDER */
+[data-testid="stExpander"] {
+    background-color: #111827;
+    border-radius: 12px;
+    border: 1px solid #374151;
 }
 
 </style>
