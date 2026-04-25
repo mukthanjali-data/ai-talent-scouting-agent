@@ -1,6 +1,6 @@
 import re
 
-# ---------- EXPERIENCE ----------
+# -------- EXPERIENCE --------
 def extract_experience(text):
     text = text.lower()
 
@@ -15,8 +15,7 @@ def extract_experience(text):
 
     return (1, 3)
 
-
-# ---------- JD PARSER ----------
+# -------- JD PARSER --------
 def extract_requirements(jd):
     jd = jd.lower()
 
@@ -28,10 +27,6 @@ def extract_requirements(jd):
         role = "Data Analyst"
         skills = ["python", "sql", "excel", "power bi"]
 
-    elif "business" in jd:
-        role = "Business Analyst"
-        skills = ["excel", "sql", "analysis"]
-
     else:
         role = "General Role"
         skills = ["communication"]
@@ -40,20 +35,30 @@ def extract_requirements(jd):
 
     return skills, exp, role
 
-
-# ---------- RESUME PARSER ----------
+# -------- RESUME PARSER --------
 def extract_candidate_profile(text):
     text = text.lower()
     skills = []
 
-    # direct match
-    keywords = ["sales", "crm", "python", "sql", "excel", "power bi"]
-    for k in keywords:
-        if k in text:
-            skills.append(k)
+    if "sales" in text:
+        skills.append("sales")
 
-    # smart inference
-    if any(w in text for w in ["client", "customer", "relationship", "negotiation", "handling"]):
+    if "crm" in text or "salesforce" in text:
+        skills.append("crm")
+
+    if "python" in text:
+        skills.append("python")
+
+    if "sql" in text:
+        skills.append("sql")
+
+    if "excel" in text:
+        skills.append("excel")
+
+    if any(w in text for w in [
+        "client", "customer", "relationship",
+        "negotiation", "presentation"
+    ]):
         skills.append("communication")
 
     matches = re.findall(r'(\d+)\+?\s*year', text)
@@ -64,9 +69,8 @@ def extract_candidate_profile(text):
         "experience": exp
     }
 
-
-# ---------- SCORING ----------
-def calculate_score(candidate, req_skills, req_exp):
+# -------- MATCH SCORE --------
+def match_score(candidate, req_skills, req_exp):
     matched = [s for s in candidate["skills"] if s in req_skills]
 
     skill_score = (len(matched) / len(req_skills)) * 70
@@ -80,38 +84,29 @@ def calculate_score(candidate, req_skills, req_exp):
     else:
         exp_score = 20
 
-    total = skill_score + exp_score
+    return round(skill_score + exp_score, 2), matched
 
-    return round(min(total, 100), 2), matched
+# -------- INTEREST SCORE --------
+def interest_score(answer):
+    a = answer.lower()
+    if "yes" in a:
+        return 90
+    elif "maybe" in a:
+        return 60
+    else:
+        return 30
 
-
-# ---------- FINAL ----------
+# -------- FINAL ANALYSIS --------
 def analyze(jd, resume_text):
     req_skills, req_exp, role = extract_requirements(jd)
     candidate = extract_candidate_profile(resume_text)
 
-    score, matched = calculate_score(candidate, req_skills, req_exp)
-
+    m_score, matched = match_score(candidate, req_skills, req_exp)
     missing = [s for s in req_skills if s not in matched]
 
-    if score >= 75:
-        decision = "Recommended"
-    elif score >= 55:
-        decision = "Consider"
-    else:
-        decision = "Reject"
-
-    reason = f"""
-    Candidate matches {len(matched)}/{len(req_skills)} skills.
-    Experience: {candidate['experience']} years.
-    Missing: {', '.join(missing)}
-    """
-
     return {
-        "score": score,
-        "decision": decision,
+        "match_score": m_score,
         "matched": matched,
         "missing": missing,
-        "reason": reason,
         "role": role
     }
