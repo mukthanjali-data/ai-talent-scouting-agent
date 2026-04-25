@@ -6,46 +6,67 @@ from brain import *
 
 st.set_page_config(layout="wide")
 
-# LOAD DATA
+# ---------- CSS ----------
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+}
+h1,h2,h3,p,label {
+    color:#f8fafc !important;
+}
+.stButton>button {
+    background: linear-gradient(to right,#3b82f6,#2563eb);
+    color:white;
+    border-radius:10px;
+    padding:10px;
+    font-weight:600;
+}
+[data-testid="stExpander"] {
+    background:#111827;
+    border-radius:12px;
+    border:1px solid #374151;
+}
+footer {visibility:hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------- LOAD ----------
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# SIDEBAR
+# ---------- SIDEBAR ----------
 st.sidebar.header("⚙️ Recruiter Settings")
 
 match_weight = st.sidebar.slider("Match Weight", 0.5, 1.0, 0.8)
-min_exp_filter = st.sidebar.slider("Min Experience", 0, 10, 0)
-max_exp_filter = st.sidebar.slider("Max Experience", 0, 10, 10)
+min_exp = st.sidebar.slider("Min Experience", 0, 10, 0)
+max_exp = st.sidebar.slider("Max Experience", 0, 10, 10)
 top_n = st.sidebar.slider("Top Candidates", 1, 10, 5)
 threshold = st.sidebar.slider("Min Score %", 0, 100, 40)
-strict_mode = st.sidebar.checkbox("Strict Skill Match")
 
-# HEADER
+# ---------- HEADER ----------
 st.title("🤖 TalentAI Scout")
 st.caption("AI-powered intelligent hiring system")
 
-st.markdown("### 🚀 Intelligent AI Recruitment Agent")
 st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
 
-# INPUT
-uploaded = st.file_uploader("Upload JD", ["pdf", "txt"])
-jd_input = st.text_area("Paste JD")
+# ---------- INPUT ----------
+uploaded = st.file_uploader("Upload JD", ["pdf","txt"])
+jd_text = st.text_area("Paste JD", height=180)
 
-def read_file(file):
-    if file is None:
-        return ""
-    if file.type == "application/pdf":
+def read_pdf(file):
+    if file:
         reader = PdfReader(file)
         return "".join([p.extract_text() or "" for p in reader.pages])
-    return file.read().decode("utf-8")
+    return ""
 
-jd = read_file(uploaded) if uploaded else jd_input
+jd = read_pdf(uploaded) if uploaded else jd_text
 
-# FIND
-if st.button("Find Candidates"):
+# ---------- FIND ----------
+if st.button("🔍 Find Candidates"):
 
     if not jd.strip():
-        st.warning("Enter JD")
+        st.warning("Please enter JD")
         st.stop()
 
     skills, exp, role = ai_extract_requirements(jd)
@@ -56,65 +77,73 @@ if st.button("Find Candidates"):
 
     for c in candidates:
 
-        if not (min_exp_filter <= c["experience"] <= max_exp_filter):
+        if not (min_exp <= c["experience"] <= max_exp):
             continue
 
         r = analyze_job_and_match(jd, c, skills, exp, role)
 
-        if strict_mode and len(r["matched_skills"]) == 0:
-            continue
-
         interest = 50 + c["experience"] * 2
 
-        final = round(match_weight * r["match_score"] + (1-match_weight)*interest, 2)
+        final = round(match_weight*r["match_score"] + (1-match_weight)*interest,2)
 
         decision = "Recommended" if r["match_score"]>=70 else "Consider" if r["match_score"]>=55 else "Reject"
 
         results.append({
-            "name": c["name"],
-            "final": final,
-            "match": r["match_score"],
-            "skills": r["matched_skills"],
-            "missing": r["missing_skills"],
-            "decision": decision
+            "name":c["name"],
+            "score":final,
+            "decision":decision,
+            "match":r["match_score"],
+            "skills":r["matched_skills"],
+            "missing":r["missing_skills"]
         })
 
-    results = sorted(results, key=lambda x: x["final"], reverse=True)
-    results = [r for r in results if r["final"] >= threshold][:top_n]
+    results = sorted(results,key=lambda x:x["score"],reverse=True)
+    results = [r for r in results if r["score"]>=threshold][:top_n]
 
     if not results:
         st.warning("No candidates match filters")
         st.stop()
 
-    st.success(f"🏆 Top Candidate: {results[0]['name']} ({results[0]['final']}%)")
+    st.success(f"🏆 Top Candidate: {results[0]['name']} ({results[0]['score']}%)")
 
     for r in results:
-        with st.expander(f"{r['name']} — {r['final']}%"):
-            st.write(f"Decision: {r['decision']}")
-            st.write("Matched:", r["skills"])
-            st.write("Missing:", r["missing"][:3])
+        with st.expander(f"{r['name']} — {r['score']}%"):
+            st.write("🎯 Decision:",r["decision"])
+            st.write("✅ Matched Skills:",r["skills"])
+            st.write("❌ Missing Skills:",r["missing"][:3])
 
     df = pd.DataFrame(results)
-    st.download_button("Download CSV", df.to_csv(index=False), "results.csv")
+    st.download_button("📥 Download CSV", df.to_csv(index=False), "results.csv")
 
-# -------- SINGLE CANDIDATE -------- #
+# ---------- SINGLE EVALUATION ----------
 st.markdown("---")
-st.subheader("🔍 Evaluate Single Candidate")
+st.subheader("🔍 Evaluate Candidate")
 
-profile_text = st.text_area("Paste LinkedIn/Resume")
+profile = st.text_area("Paste LinkedIn / Resume")
+
+resume_file = st.file_uploader("Upload Resume", ["pdf","txt"])
 
 if st.button("Evaluate Candidate"):
 
-    candidate = extract_candidate_profile(profile_text)
+    text = profile if profile else read_pdf(resume_file)
+
+    if not text:
+        st.warning("Provide profile or resume")
+        st.stop()
+
+    candidate = extract_candidate_profile(text)
+
     skills, exp, role = ai_extract_requirements(jd)
 
-    r = analyze_job_and_match(jd, candidate, skills, exp, role)
+    r = analyze_job_and_match(jd,candidate,skills,exp,role)
 
     score = r["match_score"]
 
     decision = "Recommended" if score>=70 else "Consider" if score>=55 else "Reject"
 
-    st.write(f"Score: {score}")
-    st.write(f"Decision: {decision}")
-    st.write("Matched:", r["matched_skills"])
-    st.write("Missing:", r["missing_skills"])
+    st.success("Evaluation Complete")
+
+    st.write(f"🎯 Score: {score}%")
+    st.write(f"📌 Decision: {decision}")
+    st.write("✅ Matched Skills:",r["matched_skills"])
+    st.write("❌ Missing Skills:",r["missing_skills"][:3])
