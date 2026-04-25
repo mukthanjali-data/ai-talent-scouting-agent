@@ -10,6 +10,7 @@ api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
 
+# ---------------- HELPERS ---------------- #
 def extract_experience(jd):
     m = re.search(r'(\d+)\+?\s*year', jd.lower())
     return int(m.group(1)) if m else 2
@@ -28,7 +29,7 @@ def ai_extract_requirements(jd):
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
-Extract job role, skills, and experience.
+Extract job role, skills, experience.
 
 Return JSON:
 {{"role":"","skills":[],"experience":number}}
@@ -57,22 +58,23 @@ JD:
 
     text = jd.lower()
 
-    if "sales" in text:
+    # 🔥 Improved fallback (semantic coverage)
+    if "data" in text:
+        role = role or "Data Analyst"
+        skills = skills or ["python", "sql", "excel", "power bi", "tableau"]
+
+    elif "sales" in text:
         role = role or "Sales Executive"
         skills = skills or ["sales", "communication", "crm"]
-
-    elif "data" in text:
-        role = role or "Data Analyst"
-        skills = skills or ["python", "sql", "excel"]
 
     else:
         role = role or "General Role"
         skills = skills or ["communication"]
 
-    return [s.lower() for s in skills[:5]], exp, role
+    return [s.lower() for s in skills[:6]], exp, role
 
 
-# ---------------- SCORING ---------------- #
+# ---------------- RULE SCORING ---------------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
@@ -94,7 +96,7 @@ def ai_match(jd, candidate):
     prompt = f"""
 You are a recruiter.
 
-Evaluate candidate for job.
+Evaluate candidate for job using semantic understanding.
 
 JD:
 {jd}
@@ -154,13 +156,15 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
     else:
         final = rule_s
 
-    # 🔥 strong explanation
+    # 🔥 intelligent explanation
+    missing = [s for s in skills if s not in matched]
+
     if matched:
         skill_text = ", ".join(matched[:2])
-        gap = "minor skill gaps"
     else:
         skill_text = "limited matching skills"
-        gap = "significant skill gaps"
+
+    gap = f"missing skills like {', '.join(missing[:2])}" if missing else "no major gaps"
 
     reason = (
         f"{candidate['name']} has {candidate['experience']} years experience and matches {skill_text}. "
