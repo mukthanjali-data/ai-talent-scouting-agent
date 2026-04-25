@@ -1,75 +1,177 @@
 import streamlit as st
 import json
-import re
-import random
+from PyPDF2 import PdfReader
+from brain import analyze_job_and_match, ai_extract_requirements, ai_assess_interest
+
+st.set_page_config(layout="wide")
 
 # Load candidates
-with open("candidates.json", "r") as f:
+with open("candidates.json") as f:
     candidates = json.load(f)
 
-# ---------------- FUNCTIONS ---------------- #
+# Session state
+for k, v in {
+    "results": [],
+    "chat_step": 0,
+    "active_chat": None,
+    "interest_scores": {}
+}.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-def extract_skills(jd):
-    skills_list = ["Python", "SQL", "Excel", "Power BI", "Tableau", "Machine Learning"]
-    return [skill for skill in skills_list if skill.lower() in jd.lower()]
 
-def extract_experience(jd):
-    match = re.search(r'(\d+)\s*years', jd)
-    return int(match.group(1)) if match else 0
+# Read uploaded file
+def read_file(file):
+    if file is None:
+        return ""
+    if file.type == "application/pdf":
+        reader = PdfReader(file)
+        text = ""
+        for p in reader.pages:
+            text += p.extract_text() or ""
+        return text
+    return file.read().decode("utf-8")
 
-def calculate_match_score(candidate, required_skills, required_exp):
-    matched_skills = set(candidate["skills"]) & set(required_skills)
-    
-    skill_score = len(matched_skills) / len(required_skills) if required_skills else 0
-    exp_score = min(candidate["experience"] / required_exp, 1) if required_exp > 0 else 1
-    
-    match_score = (skill_score + exp_score) / 2
-    
-    return round(match_score * 100, 2), matched_skills
 
-def calculate_interest_score():
-    return random.randint(50, 100)
-
-# ---------------- UI ---------------- #
-
+# UI
 st.title("🤖 AI Talent Scouting Agent")
-st.markdown("### 🚀 Smart AI Recruiter Dashboard")
 
-jd = st.text_area("Paste Job Description")
+st.markdown("""
+### 🚀 AI Agent Workflow:
+JD → AI Parsing → Hybrid Matching → Chat → Interest → Final Ranking
+""")
 
+uploaded = st.file_uploader("📄 Upload Job Description (PDF/TXT)", ["pdf", "txt"])
+jd_input = st.text_area("📋 Or paste Job Description")
+
+jd = read_file(uploaded) if uploaded else jd_input
+
+
+# Find candidates
 if st.button("Find Candidates"):
-    
-    required_skills = extract_skills(jd)
-    required_exp = extract_experience(jd)
+
+    if not jd.strip():
+        st.warning("Please upload or paste a Job Description")
+        st.stop()
+
+    skills, exp, role = ai_extract_requirements(jd)
+
+    st.success(f"🎯 Role: {role} | ⏳ Exp: {exp} yrs | 🧠 Skills: {', '.join(skills)}")
 
     results = []
 
-    for candidate in candidates:
-        match_score, matched_skills = calculate_match_score(candidate, required_skills, required_exp)
+    for c in candidates:
+        r = analyze_job_and_match(jd, c, skills, exp, role)
 
-        interest_score = calculate_interest_score()
-
-        final_score = round((0.7 * match_score) + (0.3 * interest_score), 2)
+        interest = st.session_state.interest_scores.get(c["name"], 50)
+        final = round(0.7 * r["match_score"] + 0.3 * interest, 2)
 
         results.append({
-            "name": candidate["name"],
-            "match_score": match_score,
-            "interest_score": interest_score,
-            "final_score": final_score,
-            "matched_skills": list(matched_skills),
-            "reason": f"Matched {len(matched_skills)} out of {len(required_skills)} skills"
+            "name": c["name"],
+            "exp": c["experience"],
+            "match": r["match_score"],
+            "interest": interest,
+            "final": final,
+            "reason": r["reason"]
         })
 
-    # Sort by FINAL score
-    results = sorted(results, key=lambda x: x["final_score"], reverse=True)
+    st.session_state.results = sorted(results, key=lambda x: x["final"], reverse=True)
 
+    st.success("✅ AI Agent completed analysis")
+
+
+# Display results
+if st.session_state.results:
     st.subheader("📊 Ranked Candidates")
 
-    for r in results:
-        st.write(f"### {r['name']}")
-        st.write(f"✅ Match Score: {r['match_score']}%")
-        st.write(f"💬 Interest Score: {r['interest_score']}%")
-        st.write(f"🏆 Final Score: {r['final_score']}%")
-        st.write(f"🧠 Matched Skills: {r['matched_skills']}")
-        st.write(f"📌 Reason: {r['reason']}")
-        st.write("---")
+    for r in st.session_state.results:
+        with st.expander(f"{r['name']} — {r['final']}%"):
+
+            st.markdown("### 🤖 AI Decision Summary")
+
+            decision = (
+                "Highly Recommended" if r["final"] > 75 else
+                "Good Fit" if r["final"] > 60 else
+                "Moderate Fit"
+            )
+
+            st.success(decision)
+
+            st.markdown("### 🧠 Recruiter Insight")
+            st.write(r["reason"])
+
+            interest = st.session_state.interest_scores.get(r["name"], 50)
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric("Match Score", f"{r['match']}%")
+
+            with col2:
+                st.metric("Interest Score", f"{interest}%")
+
+            with col3:
+                confidence = round((r["match"] + interest) / 2, 2)
+                st.metric("Confidence", f"{confidence}%")
+
+            st.progress(r["match"] / 100)
+
+            st.markdown("### 📊 Why Ranked Here")
+            st.write(
+                f"Ranking based on match ({r['match']}%) and interest ({interest}%)."
+            )
+
+            st.info("📊 Final Score = 70% Match + 30% Interest")
+
+            if st.button(f"💬 Engage {r['name']}", key=r["name"]):
+                st.session_state.active_chat = r["name"]
+                st.session_state.chat_step = 0
+                st.session_state.interest_scores[r["name"]] = 50
+
+
+# Chat section
+if st.session_state.active_chat:
+    st.subheader(f"💬 Chat with {st.session_state.active_chat}")
+
+    questions = [
+        "Are you open to new opportunities?",
+        "Are you open to relocation?",
+        "What is your expected salary?",
+        "When can you join?"
+    ]
+
+    step = st.session_state.chat_step
+
+    if step < len(questions):
+        st.write(questions[step])
+
+        user_input = st.text_input("Your answer", key=f"chat_{step}")
+
+        if st.button("Send"):
+            if user_input:
+                st.info("🤖 AI analyzing response...")
+
+                delta = ai_assess_interest(user_input)
+
+                st.session_state.interest_scores[st.session_state.active_chat] += delta
+                st.session_state.chat_step += 1
+                st.rerun()
+
+    else:
+        final_interest = st.session_state.interest_scores[st.session_state.active_chat]
+        st.success(f"✅ Final Interest Score: {final_interest}%")
+
+        updated = []
+
+        for r in st.session_state.results:
+            interest = st.session_state.interest_scores.get(r["name"], 50)
+            final = round(0.7 * r["match"] + 0.3 * interest, 2)
+
+            r["interest"] = interest
+            r["final"] = final
+            updated.append(r)
+
+        st.session_state.results = sorted(updated, key=lambda x: x["final"], reverse=True)
+
+        st.session_state.active_chat = None
+        st.rerun()
