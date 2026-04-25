@@ -39,6 +39,7 @@ jd_input = st.text_area("📋 Or paste JD")
 jd = read_file(uploaded) if uploaded else jd_input
 
 
+# ---------- FIND ---------- #
 if st.button("Find Candidates"):
 
     if not jd.strip():
@@ -73,15 +74,16 @@ if st.button("Find Candidates"):
     st.session_state.results = sorted(results, key=lambda x: x["final"], reverse=True)
 
 
+# ---------- DISPLAY ---------- #
 if st.session_state.results:
 
     for r in st.session_state.results:
 
         with st.expander(f"{r['name']} — {r['final']}%"):
 
-            if r["match"] > 70:
+            if r["match"] > 65:
                 st.success("Strong Fit")
-            elif r["match"] > 55:
+            elif r["match"] > 50:
                 st.info("Good Fit")
             else:
                 st.warning("Needs Improvement")
@@ -97,6 +99,7 @@ if st.session_state.results:
                 st.session_state.interest_scores[r["name"]] = r["interest"]
 
 
+# ---------- CHAT ---------- #
 if st.session_state.active_chat:
 
     questions = [
