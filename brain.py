@@ -10,7 +10,6 @@ api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
 
-# -------- EXPERIENCE -------- #
 def extract_experience(jd):
     jd = jd.lower()
 
@@ -33,7 +32,6 @@ def safe_json(text):
         return None
 
 
-# -------- JD PARSING -------- #
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
@@ -83,7 +81,6 @@ JD:
     return [s.lower() for s in skills[:6]], exp, role
 
 
-# -------- SCORING -------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
@@ -91,9 +88,6 @@ def rule_score(candidate, req_skills, req_exp):
 
     skill_ratio = len(matched) / max(len(req_skills), 1)
     skill_score = skill_ratio * 70
-
-    if len(matched) >= 3:
-        skill_score += 10
 
     min_exp, max_exp = req_exp
 
@@ -109,9 +103,9 @@ def rule_score(candidate, req_skills, req_exp):
     return round(min(total, 100), 2), matched
 
 
-# -------- INTEREST -------- #
 def ai_assess_interest(ans):
     a = ans.lower()
+
     if "yes" in a:
         return 10
     elif "no" in a:
@@ -121,7 +115,6 @@ def ai_assess_interest(ans):
     return 0
 
 
-# -------- MAIN -------- #
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
