@@ -12,8 +12,20 @@ client = genai.Client(api_key=api_key)
 
 # ---------------- HELPERS ---------------- #
 def extract_experience(jd):
-    m = re.search(r'(\d+)\+?\s*year', jd.lower())
-    return int(m.group(1)) if m else 2
+    jd = jd.lower()
+
+    # Range: 2-5 or 2–5 years
+    m = re.search(r'(\d+)\s*[-–]\s*(\d+)\s*year', jd)
+    if m:
+        return (int(m.group(1)), int(m.group(2)))
+
+    # Single value: 3+ years / 3 years
+    m = re.search(r'(\d+)\+?\s*year', jd)
+    if m:
+        val = int(m.group(1))
+        return (val, val)
+
+    return (2, 5)
 
 
 def safe_json(text):
@@ -29,10 +41,10 @@ def ai_extract_requirements(jd):
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
-Extract job role, skills, experience.
+Extract job role, skills, and experience.
 
 Return JSON:
-{{"role":"","skills":[],"experience":number}}
+{{"role":"","skills":[],"experience":number or [min,max]}}
 
 JD:
 {jd}
@@ -46,19 +58,25 @@ JD:
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
-
         data = safe_json(resp.text) or {}
 
         role = data.get("role", "")
         skills = data.get("skills", [])
-        exp = int(data.get("experience", fallback_exp))
+
+        raw_exp = data.get("experience", None)
+        if isinstance(raw_exp, list) and len(raw_exp) == 2:
+            exp = (int(raw_exp[0]), int(raw_exp[1]))
+        elif isinstance(raw_exp, int):
+            exp = (raw_exp, raw_exp)
+        else:
+            exp = fallback_exp
 
     except:
         pass
 
     text = jd.lower()
 
-    # 🔥 Improved fallback (semantic coverage)
+    # Fallback semantic enrichment
     if "data" in text:
         role = role or "Data Analyst"
         skills = skills or ["python", "sql", "excel", "power bi", "tableau"]
@@ -74,18 +92,30 @@ JD:
     return [s.lower() for s in skills[:6]], exp, role
 
 
-# ---------------- RULE SCORING ---------------- #
+# ---------------- SCORING ---------------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
     matched = [s for s in c_skills if s in req_skills]
 
+    # Skill scoring
     skill_score = (len(matched) / max(len(req_skills), 1)) * 60 if matched else 25
-    exp_score = min((candidate["experience"] / max(req_exp, 1)) * 25, 25)
 
-    bonus = max(candidate["experience"] - req_exp, 0) * 2
+    # Bonus for strong partial match
+    if len(matched) >= 2:
+        skill_score += 10
 
-    total = skill_score + exp_score + bonus
+    # Experience scoring
+    min_exp, max_exp = req_exp
+
+    if candidate["experience"] < min_exp:
+        exp_score = 10
+    elif min_exp <= candidate["experience"] <= max_exp:
+        exp_score = 25
+    else:
+        exp_score = 20
+
+    total = skill_score + exp_score
 
     return round(min(total, 100), 2), matched
 
@@ -96,7 +126,7 @@ def ai_match(jd, candidate):
     prompt = f"""
 You are a recruiter.
 
-Evaluate candidate for job using semantic understanding.
+Evaluate candidate for job.
 
 JD:
 {jd}
@@ -156,14 +186,10 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
     else:
         final = rule_s
 
-    # 🔥 intelligent explanation
+    # Explanation
     missing = [s for s in skills if s not in matched]
 
-    if matched:
-        skill_text = ", ".join(matched[:2])
-    else:
-        skill_text = "limited matching skills"
-
+    skill_text = ", ".join(matched[:2]) if matched else "limited matching skills"
     gap = f"missing skills like {', '.join(missing[:2])}" if missing else "no major gaps"
 
     reason = (
