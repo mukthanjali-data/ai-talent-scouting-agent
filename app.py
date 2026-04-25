@@ -5,120 +5,11 @@ from brain import analyze_job_and_match, ai_extract_requirements, ai_assess_inte
 
 st.set_page_config(layout="wide")
 
-# -------- UI THEME -------- #
-st.markdown("""
-<style>
-
-/* GLOBAL */
-.stApp {
-    font-family: 'Segoe UI', sans-serif;
-}
-
-/* LIGHT MODE */
-@media (prefers-color-scheme: light) {
-
-    .stApp {
-        background: #f1f5f9;
-    }
-
-    h1, h2, h3, p, label {
-        color: #0f172a !important;
-    }
-
-    textarea, input {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 10px !important;
-    }
-
-    [data-testid="stFileUploader"] {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        padding: 15px;
-    }
-
-    [data-testid="stExpander"] {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-    }
-}
-
-/* DARK MODE */
-@media (prefers-color-scheme: dark) {
-
-    .stApp {
-        background: linear-gradient(to right, #0f172a, #1e293b);
-    }
-
-    h1, h2, h3, p, label {
-        color: #f8fafc !important;
-    }
-
-    textarea, input {
-        background-color: #111827 !important;
-        color: #f9fafb !important;
-        border: 1px solid #374151 !important;
-        border-radius: 10px !important;
-    }
-
-    [data-testid="stFileUploader"] {
-        background-color: #111827;
-        border: 1px solid #374151;
-        border-radius: 12px;
-        padding: 15px;
-    }
-
-    [data-testid="stExpander"] {
-        background-color: #111827;
-        border: 1px solid #374151;
-        border-radius: 12px;
-    }
-}
-
-/* BUTTON (COMMON) */
-.stButton>button {
-    background: linear-gradient(to right, #2563eb, #3b82f6);
-    color: white;
-    border-radius: 10px;
-    padding: 12px 20px;
-    font-weight: 600;
-    width: 100%;
-}
-
-/* SHADOW */
-textarea, [data-testid="stFileUploader"] {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* HIDE STREAMLIT FOOTER */
-footer {
-    visibility: hidden;
-}
-
-</style>
-""", unsafe_allow_html=True)
-# -------- LOAD DATA -------- #
+# -------- LOAD -------- #
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# -------- SESSION -------- #
-if "results" not in st.session_state:
-    st.session_state.results = []
-
-if "chat_step" not in st.session_state:
-    st.session_state.chat_step = 0
-
-if "active_chat" not in st.session_state:
-    st.session_state.active_chat = None
-
-if "interest_scores" not in st.session_state:
-    st.session_state.interest_scores = {}
-
-
-# -------- FILE READ -------- #
+# -------- HELPERS -------- #
 def read_file(file):
     if file is None:
         return ""
@@ -130,33 +21,30 @@ def read_file(file):
         return text
     return file.read().decode("utf-8")
 
-
 # -------- HEADER -------- #
-st.markdown("""
-<h1 style='font-size:40px;'>🤖 TalentAI Scout</h1>
-<p style='color:#94a3b8;'>AI-powered intelligent hiring system</p>
-""", unsafe_allow_html=True)
+st.title("🤖 TalentAI Scout")
+st.caption("AI-powered intelligent hiring system")
 
 st.markdown("### 🚀 Intelligent AI Recruitment Agent")
-
 st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
 
+# -------- INPUT -------- #
 uploaded = st.file_uploader("Upload JD", ["pdf", "txt"])
-jd_input = st.text_area("Paste JD")
-
+jd_input = st.text_area("Paste JD", height=180)
 jd = read_file(uploaded) if uploaded else jd_input
 
+linkedin = st.text_input("🔗 LinkedIn Profile (optional)")
+resume = st.file_uploader("Upload Resume (optional)", ["pdf", "txt"])
 
-# -------- FIND -------- #
-if st.button("Find Candidates"):
+# -------- PROCESS -------- #
+if st.button("🔍 Find Candidates", use_container_width=True):
 
     if not jd.strip():
-        st.warning("Please provide a Job Description")
+        st.warning("Enter JD")
         st.stop()
 
     skills, exp, role = ai_extract_requirements(jd)
-
-    st.success(f"🎯 Role: {role} | ⏳ Experience: {exp[0]}–{exp[1]} yrs")
+    st.success(f"Role: {role} | Experience: {exp[0]}–{exp[1]} yrs")
 
     results = []
 
@@ -164,114 +52,52 @@ if st.button("Find Candidates"):
 
         r = analyze_job_and_match(jd, c, skills, exp, role)
 
-        # Base interest
-        base_interest = min(70, 50 + c["experience"] * 2)
+        interest = 60  # base stable
 
-        interest = st.session_state.interest_scores.get(
-            c["name"], base_interest
-        )
-
-        # Final scoring
         final = round(0.8 * r["match_score"] + 0.2 * interest, 2)
 
-        # Strong differentiation
+        # differentiation
         if r["match_score"] >= 70:
             final += 3
         elif r["match_score"] < 50:
             final -= 3
 
-        # Penalty
-        if r["match_score"] < 50:
-            final *= 0.9
-
-        # Tie-breaker
-        final += len(r["matched_skills"]) * 0.5
-
         results.append({
             "name": c["name"],
             "match": r["match_score"],
-            "interest": interest,
-            "final": round(final, 2),
+            "final": final,
             "reason": r["reason"],
-            "skills": r["matched_skills"]
+            "skills": r["matched_skills"],
+            "missing": r["missing_skills"]
         })
 
-    st.session_state.results = sorted(
-        results, key=lambda x: x["final"], reverse=True
-    )
+    results = sorted(results, key=lambda x: x["final"], reverse=True)
 
+    top = results[0]
+    st.success(f"🏆 Top Candidate: {top['name']} ({top['final']}%)")
 
-# -------- DISPLAY -------- #
-if st.session_state.results:
-
-    top = st.session_state.results[0]
-
-    st.success(
-        f"🏆 Top Candidate: {top['name']} ({top['final']}%) — Best skill alignment and experience match"
-    )
-
-    for r in st.session_state.results:
+    # -------- DISPLAY -------- #
+    for r in results:
 
         with st.expander(f"{r['name']} — {r['final']}%"):
 
             if r["match"] >= 70:
+                decision = "Recommended"
                 st.success("Strong Fit")
             elif r["match"] >= 55:
+                decision = "Consider"
                 st.info("Good Fit")
             else:
+                decision = "Reject"
                 st.warning("Needs Improvement")
 
+            st.write("🧠 Recruiter Insight:")
             st.write(r["reason"])
 
-            st.metric("Match Score", f"{r['match']}%")
-            st.metric("Interest Score", f"{r['interest']}%")
+            st.write("✅ Matched Skills:", r["skills"])
+            st.write("❌ Missing Skills:", r["missing"][:3])
 
-            st.write(f"🧠 Matched Skills: {r['skills']}")
+            st.write(f"🎯 Hiring Decision: {decision}")
 
-            st.progress(r["match"] / 100)
-
-            if st.button(f"💬 Engage {r['name']}", key=r["name"]):
-                st.session_state.active_chat = r["name"]
-                st.session_state.chat_step = 0
-                st.session_state.interest_scores[r["name"]] = r["interest"]
-
-
-# -------- CHAT -------- #
-if st.session_state.active_chat:
-
-    st.markdown("---")
-    st.subheader(f"💬 Chat with {st.session_state.active_chat}")
-
-    questions = [
-        "Are you open to this role?",
-        "Are you open to relocation?",
-        "What is your expected salary?",
-        "What is your notice period?"
-    ]
-
-    step = st.session_state.chat_step
-
-    if step < len(questions):
-
-        st.write(f"🤖 {questions[step]}")
-
-        user_input = st.text_input(
-            "Your answer",
-            key=f"chat_input_{step}"
-        )
-
-        if st.button("Send"):
-
-            if user_input.strip():
-
-                delta = ai_assess_interest(user_input)
-                name = st.session_state.active_chat
-
-                st.session_state.interest_scores[name] += delta
-                st.session_state.chat_step += 1
-
-                st.rerun()
-
-    else:
-        st.success("✅ Chat Completed!")
-        st.session_state.active_chat = None
+            if linkedin:
+                st.markdown(f"[🔗 View LinkedIn]({linkedin})")
