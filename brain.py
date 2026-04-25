@@ -1,139 +1,250 @@
-import streamlit as st
+from google import genai
 import json
-import docx
-from PyPDF2 import PdfReader
-from brain import analyze, extract_requirements, interest_score
+import os
+import re
+from dotenv import load_dotenv
+load_dotenv()
 
-st.set_page_config(layout="wide")
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# ---------- CSS ----------
-st.markdown("""
-<style>
-.stApp {background: linear-gradient(to right,#0f172a,#1e293b);}
-h1,h2,h3,p,label {color:white;}
-textarea {background:#111827;color:white;border-radius:10px;}
-.stButton>button {
-    background: linear-gradient(to right,#2563eb,#3b82f6);
-    color:white;
-    border-radius:10px;
-    padding:10px;
-    font-weight:600;
-}
-</style>
-""", unsafe_allow_html=True)
+# ─────────────────────────────────────────
+# Fallback extractors
+# ─────────────────────────────────────────
+def _fallback_skills(text):
+    known = [
+        "python","sql","excel","power bi","tableau","machine learning",
+        "deep learning","nlp","java","javascript","react","node.js","aws",
+        "docker","kubernetes","mongodb","postgresql","data analysis",
+        "communication","leadership","project management","sales","crm",
+        "lead generation","negotiation","field sales","digital marketing",
+        "seo","social media","hr","recruitment","talent acquisition",
+        "business analysis","stakeholder management","operations",
+        "campaign management","statistics","data visualization","reporting"
+    ]
+    tl = text.lower()
+    return [s for s in known if s in tl]
 
-# ---------- HEADER ----------
-st.title("🤖 TalentAI Scout")
-st.caption("AI-powered intelligent hiring system")
-st.markdown("JD → AI Parsing → Matching → Chat → Interest → Ranking")
+def _fallback_exp(text):
+    for pat in [
+        r'(\d+)\+?\s*years?\s*of\s*experience',
+        r'(\d+)\+?\s*years?\s*experience',
+        r'minimum\s*(\d+)\+?\s*years?',
+        r'at\s*least\s*(\d+)\+?\s*years?',
+        r'(\d+)\s*-\s*(\d+)\s*years?',
+        r'(\d+)\+?\s*years?',
+    ]:
+        m = re.search(pat, text.lower())
+        if m:
+            v = int(m.group(1))
+            v2 = int(m.group(2)) if len(m.groups()) > 1 and m.group(2) else v + 2
+            return (v, v2)
+    return (2, 5)
 
-# ---------- FILE READER ----------
-def read_file(file):
-    if file is None:
-        return ""
+# ─────────────────────────────────────────
+# AI: Extract JD Requirements
+# ─────────────────────────────────────────
+def extract_requirements(jd_text):
+    fallback_skills = _fallback_skills(jd_text)
+    fallback_exp    = _fallback_exp(jd_text)
 
-    if file.name.endswith(".pdf"):
-        reader = PdfReader(file)
-        return " ".join([p.extract_text() or "" for p in reader.pages])
+    prompt = f"""
+Read this job description and extract:
+1. Required technical/domain skills (max 8, most important only)
+2. Experience range as min and max years
+3. Job role/title
 
-    elif file.name.endswith(".docx"):
-        doc = docx.Document(file)
-        return " ".join([p.text for p in doc.paragraphs])
+Return ONLY valid JSON, no markdown:
+{{
+    "skills": ["skill1", "skill2"],
+    "exp_min": 2,
+    "exp_max": 5,
+    "role": "Job Title"
+}}
 
-    elif file.name.endswith(".txt"):
-        return file.read().decode()
+Job Description:
+{jd_text}
+"""
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+            config={{"response_mime_type": "application/json"}}
+        )
+        d = json.loads(response.text)
+        skills  = d.get("skills", fallback_skills) or fallback_skills
+        exp_min = int(d.get("exp_min", fallback_exp[0]) or fallback_exp[0])
+        exp_max = int(d.get("exp_max", fallback_exp[1]) or fallback_exp[1])
+        role    = d.get("role", "Unknown Role") or "Unknown Role"
+        return skills[:8], (exp_min, exp_max), role
+    except Exception:
+        return fallback_skills[:8], fallback_exp, "Unknown Role"
 
-    return ""
+# ─────────────────────────────────────────
+# Scoring
+# ─────────────────────────────────────────
+def _score(required_skills, exp_range, candidate_skills, candidate_exp):
+    req_lower = [s.lower() for s in required_skills]
+    can_lower = [s.lower() for s in candidate_skills]
 
-# ---------- INPUT ----------
-st.subheader("📄 Job Description")
+    matched = [s for s in candidate_skills if s.lower() in req_lower]
+    missing = [s for s in required_skills  if s.lower() not in can_lower]
 
-jd_file = st.file_uploader("Upload JD", ["pdf","docx","txt"], key="jd")
-jd_text = st.text_area("Paste JD", key="jd_text")
+    # Skill score: 0-70
+    skill_ratio  = len(matched) / len(required_skills) if required_skills else 1.0
+    skill_points = skill_ratio * 70
 
-jd = read_file(jd_file) if jd_file else jd_text
-
-# ---------- BUTTONS ----------
-col1, col2 = st.columns(2)
-
-find_btn = col1.button("🔍 Find Candidates")
-eval_btn = col2.button("🎯 Evaluate Candidate")
-
-# ---------- FIND CANDIDATES ----------
-if find_btn:
-    if not jd:
-        st.warning("Please provide JD")
+    # Experience score: 0-20
+    exp_min, exp_max = exp_range
+    mid_exp = (exp_min + exp_max) / 2
+    if candidate_exp >= exp_min:
+        exp_score = min(candidate_exp / mid_exp, 1.0)
     else:
-        skills, exp, role = extract_requirements(jd)
+        exp_score = max(candidate_exp / exp_min, 0.3) if exp_min > 0 else 0.5
+    exp_points = exp_score * 20
 
-        st.success(f"🎯 Role: {role} | ⏳ Exp: {exp[0]}–{exp[1]} yrs")
+    # Bonus: extra experience (unique per candidate)
+    exp_bonus = min((candidate_exp - exp_min) * 1.2, 10) if candidate_exp > exp_min else 0
 
-        with open("candidates.json") as f:
-            data = json.load(f)
+    total = round(min(100.0, max(0.0, skill_points + exp_points + exp_bonus)), 2)
+    return total, matched, missing
 
-        st.session_state["results"] = []
+# ─────────────────────────────────────────
+# AI: Analyze JD vs candidate text
+# ─────────────────────────────────────────
+def analyze(jd_text, candidate_text, required_skills=None, exp_range=None, role=None):
+    try:
+        if required_skills is None:
+            required_skills, exp_range, role = extract_requirements(jd_text)
 
-        for c in data:
-            text = " ".join(c["skills"]) + f" {c['experience']} years"
-            res = analyze(jd, text)
+        # Parse candidate skills from free text if needed
+        candidate_skills = _fallback_skills(candidate_text)
+        # Try to extract experience from text
+        exp_match = re.search(r'(\d+)\s*year', candidate_text.lower())
+        candidate_exp = int(exp_match.group(1)) if exp_match else 2
 
-            st.session_state["results"].append({
-                "name": c["name"],
-                "res": res
-            })
+        match_score, matched, missing = _score(required_skills, exp_range, candidate_skills, candidate_exp)
 
-# ---------- DISPLAY RESULTS ----------
-if "results" in st.session_state:
+        # AI recruiter note
+        note = _ai_note(jd_text, candidate_text, match_score)
 
-    for r in st.session_state["results"]:
-        name = r["name"]
-        res = r["res"]
+        return {
+            "match_score":    match_score,
+            "matched":        matched,
+            "missing":        missing,
+            "recruiter_note": note,
+            "required_skills":required_skills,
+            "exp_range":      exp_range,
+            "role":           role or "Unknown"
+        }
+    except Exception as e:
+        return {
+            "match_score": 0, "matched": [], "missing": [],
+            "recruiter_note": f"Error: {str(e)}",
+            "required_skills": [], "exp_range": (0,0), "role": "Unknown"
+        }
 
-        with st.expander(f"{name} — {res['match_score']}%"):
+# ─────────────────────────────────────────
+# Analyze structured candidate (from JSON)
+# ─────────────────────────────────────────
+def analyze_candidate(jd_text, candidate, required_skills=None, exp_range=None, role=None):
+    try:
+        if required_skills is None:
+            required_skills, exp_range, role = extract_requirements(jd_text)
 
-            st.write(f"🎯 Match Score: {res['match_score']}%")
+        match_score, matched, missing = _score(
+            required_skills, exp_range,
+            candidate["skills"], candidate["experience"]
+        )
+        note = _ai_note(jd_text, str(candidate), match_score)
 
-            st.write("✅ Matched Skills:")
-            st.markdown(", ".join(res["matched"]) if res["matched"] else "None")
+        return {
+            "match_score":    match_score,
+            "matched":        matched,
+            "missing":        missing,
+            "recruiter_note": note,
+            "required_skills":required_skills,
+            "exp_range":      exp_range,
+            "role":           role or "Unknown"
+        }
+    except Exception as e:
+        return {
+            "match_score": 0, "matched": [], "missing": [],
+            "recruiter_note": f"Error: {str(e)}",
+            "required_skills": [], "exp_range": (0,0), "role": "Unknown"
+        }
 
-            st.write("❌ Missing Skills:")
-            st.markdown(", ".join(res["missing"]) if res["missing"] else "None")
+# ─────────────────────────────────────────
+# AI: Recruiter note
+# ─────────────────────────────────────────
+def _ai_note(jd_text, candidate_text, match_score):
+    prompt = f"""
+You are a senior recruiter. Evaluate fit in 2 sentences.
+Job: {jd_text[:200]}
+Candidate: {candidate_text[:200]}
+Match Score: {match_score}%
+Sentence 1: Specific skill fit/gap.
+Sentence 2: Recommendation.
+"""
+    try:
+        r = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        return r.text.strip()
+    except Exception:
+        return f"Match score: {match_score}%. Review candidate profile manually."
 
-            # ---------- CHAT ----------
-            ans = st.text_input(
-                f"💬 Ask {name}: Are you interested?",
-                key=f"chat_{name}"
-            )
+# ─────────────────────────────────────────
+# AI: Interest Score from chat response
+# ─────────────────────────────────────────
+def interest_score(answer):
+    prompt = f"""
+Rate candidate interest from their response (0-100).
+Response: "{answer}"
+Return ONLY a JSON: {{"score": <0-100>, "sentiment": "<positive/neutral/negative>"}}
+Rules: enthusiastic=80-100, open=60-79, vague=40-59, hesitant=20-39, negative=0-19
+"""
+    try:
+        r = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+            config={{"response_mime_type": "application/json"}}
+        )
+        d = json.loads(r.text)
+        return int(d.get("score", 50))
+    except Exception:
+        ans = answer.lower()
+        if any(w in ans for w in ["yes","sure","interested","open","excited","love"]):
+            return 75
+        elif any(w in ans for w in ["no","not","busy","happy","settled"]):
+            return 20
+        return 50
 
-            if ans:
-                i_score = interest_score(ans)
-                final = round(0.7 * res["match_score"] + 0.3 * i_score, 2)
+# ─────────────────────────────────────────
+# AI: Multi-turn chat assessment
+# ─────────────────────────────────────────
+def ai_assess_interest(candidate_name, question, answer, history):
+    prompt = f"""
+Assess candidate interest delta from their answer.
+Candidate: {candidate_name}
+Question: {question}
+Answer: {answer}
 
-                st.success(f"📊 Interest Score: {i_score}")
-                st.success(f"🏆 Final Score: {final}")
-
-# ---------- EVALUATE ----------
-if eval_btn:
-
-    st.subheader("🎯 Evaluate Candidate")
-
-    resume_file = st.file_uploader("Upload Resume", ["pdf","docx","txt"], key="resume")
-    resume_text = st.text_area("Paste Resume", key="resume_text")
-
-    resume = read_file(resume_file) if resume_file else resume_text
-
-    if resume and jd:
-        result = analyze(jd, resume)
-
-        st.success("Evaluation Complete")
-
-        st.write(f"🎯 Match Score: {result['match_score']}%")
-
-        st.write("✅ Matched Skills:")
-        st.markdown(", ".join(result["matched"]) if result["matched"] else "None")
-
-        st.write("❌ Missing Skills:")
-        st.markdown(", ".join(result["missing"]) if result["missing"] else "None")
-
-    else:
-        st.warning("Provide both JD and Resume")
+Return ONLY JSON:
+{{
+    "interest_delta": <-20 to 20>,
+    "ai_followup": "<1 natural sentence>",
+    "sentiment": "<positive/neutral/negative>"
+}}
+- Enthusiastic: +15 to +20
+- Open: +5 to +10
+- Vague: 0 to +5
+- Hesitant: -10 to -5
+- Negative: -20 to -10
+"""
+    try:
+        r = client.models.generate_content(
+            model="gemini-1.5-flash", contents=prompt,
+            config={{"response_mime_type": "application/json"}}
+        )
+        return json.loads(r.text)
+    except Exception:
+        delta = 10 if "yes" in answer.lower() else -10 if "no" in answer.lower() else 0
+        return {"interest_delta": delta, "ai_followup": "Thank you!", "sentiment": "neutral"}
