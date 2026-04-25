@@ -1,32 +1,3 @@
-st.markdown("""
-<style>
-body {
-    background-color: #0f172a;
-}
-
-h1, h2, h3 {
-    color: #f8fafc;
-}
-
-.stApp {
-    background: linear-gradient(to right, #0f172a, #1e293b);
-    color: #e2e8f0;
-}
-
-.stButton>button {
-    background-color: #3b82f6;
-    color: white;
-    border-radius: 8px;
-    padding: 8px 16px;
-}
-
-.stMetric {
-    background-color: #1e293b;
-    padding: 10px;
-    border-radius: 10px;
-}
-</style>
-""", unsafe_allow_html=True)
 import streamlit as st
 import json
 from PyPDF2 import PdfReader
@@ -34,10 +5,29 @@ from brain import analyze_job_and_match, ai_extract_requirements, ai_assess_inte
 
 st.set_page_config(layout="wide")
 
+# -------- UI THEME -------- #
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(to right, #0f172a, #1e293b);
+    color: white;
+}
+h1, h2, h3 {
+    color: #f8fafc;
+}
+.stButton>button {
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 8px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# -------- LOAD DATA -------- #
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# Session state
+# -------- SESSION -------- #
 for k, v in {
     "results": [],
     "chat_step": 0,
@@ -60,15 +50,19 @@ def read_file(file):
     return file.read().decode("utf-8")
 
 
-st.title("🤖 AI Talent Scouting Agent")
+# -------- HEADER -------- #
+st.markdown("# 🤖 TalentAI Scout")
+st.markdown("### 🚀 Intelligent AI Recruitment Agent")
 
-uploaded = st.file_uploader("📄 Upload JD (PDF/TXT)", ["pdf", "txt"])
-jd_input = st.text_area("📋 Or paste JD")
+st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
+
+uploaded = st.file_uploader("Upload JD", ["pdf", "txt"])
+jd_input = st.text_area("Paste JD")
 
 jd = read_file(uploaded) if uploaded else jd_input
 
 
-# ---------- FIND ---------- #
+# -------- FIND -------- #
 if st.button("Find Candidates"):
 
     if not jd.strip():
@@ -77,7 +71,7 @@ if st.button("Find Candidates"):
 
     skills, exp, role = ai_extract_requirements(jd)
 
-    st.success(f"Role: {role} | Exp: {exp[0]}–{exp[1]} yrs | Skills: {', '.join(skills)}")
+    st.success(f"Role: {role} | Exp: {exp[0]}–{exp[1]} yrs")
 
     results = []
 
@@ -92,19 +86,26 @@ if st.button("Find Candidates"):
         if r["match_score"] < 50:
             final *= 0.9
 
+        # tie-breaker
+        final += len(r["matched_skills"]) * 0.5
+
         results.append({
             "name": c["name"],
             "match": r["match_score"],
             "interest": interest,
             "final": round(final, 2),
-            "reason": r["reason"]
+            "reason": r["reason"],
+            "skills": r["matched_skills"]
         })
 
     st.session_state.results = sorted(results, key=lambda x: x["final"], reverse=True)
 
 
-# ---------- DISPLAY ---------- #
+# -------- DISPLAY -------- #
 if st.session_state.results:
+
+    top = st.session_state.results[0]
+    st.success(f"🏆 Top Candidate: {top['name']} ({top['final']}%)")
 
     for r in st.session_state.results:
 
@@ -122,13 +123,17 @@ if st.session_state.results:
             st.metric("Match", f"{r['match']}%")
             st.metric("Interest", f"{r['interest']}%")
 
+            st.write(f"Matched Skills: {r['skills']}")
+
+            st.progress(r["match"] / 100)
+
             if st.button(f"Engage {r['name']}", key=r["name"]):
                 st.session_state.active_chat = r["name"]
                 st.session_state.chat_step = 0
                 st.session_state.interest_scores[r["name"]] = r["interest"]
 
 
-# ---------- CHAT ---------- #
+# -------- CHAT -------- #
 if st.session_state.active_chat:
 
     questions = [
