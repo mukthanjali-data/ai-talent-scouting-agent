@@ -9,56 +9,97 @@ st.set_page_config(layout="wide")
 st.markdown("""
 <style>
 
-/* BACKGROUND */
+/* GLOBAL */
 .stApp {
-    background: linear-gradient(to right, #0f172a, #1e293b);
+    font-family: 'Segoe UI', sans-serif;
 }
 
-/* TEXT */
-h1, h2, h3, p {
-    color: #f8fafc;
+/* LIGHT MODE */
+@media (prefers-color-scheme: light) {
+
+    .stApp {
+        background: #f1f5f9;
+    }
+
+    h1, h2, h3, p, label {
+        color: #0f172a !important;
+    }
+
+    textarea, input {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+    }
+
+    [data-testid="stFileUploader"] {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 15px;
+    }
+
+    [data-testid="stExpander"] {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+    }
 }
 
-/* INPUT */
-textarea, input {
-    background-color: #111827 !important;
-    color: #f9fafb !important;
-    border-radius: 10px !important;
-    border: 1px solid #374151 !important;
+/* DARK MODE */
+@media (prefers-color-scheme: dark) {
+
+    .stApp {
+        background: linear-gradient(to right, #0f172a, #1e293b);
+    }
+
+    h1, h2, h3, p, label {
+        color: #f8fafc !important;
+    }
+
+    textarea, input {
+        background-color: #111827 !important;
+        color: #f9fafb !important;
+        border: 1px solid #374151 !important;
+        border-radius: 10px !important;
+    }
+
+    [data-testid="stFileUploader"] {
+        background-color: #111827;
+        border: 1px solid #374151;
+        border-radius: 12px;
+        padding: 15px;
+    }
+
+    [data-testid="stExpander"] {
+        background-color: #111827;
+        border: 1px solid #374151;
+        border-radius: 12px;
+    }
 }
 
-/* FILE UPLOADER */
-[data-testid="stFileUploader"] {
-    background-color: #111827;
-    border-radius: 12px;
-    padding: 15px;
-    border: 1px solid #374151;
-}
-
-/* BUTTON */
+/* BUTTON (COMMON) */
 .stButton>button {
     background: linear-gradient(to right, #2563eb, #3b82f6);
     color: white;
     border-radius: 10px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-weight: 600;
+    width: 100%;
 }
 
-/* CARD */
-[data-testid="stFileUploader"], textarea {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+/* SHADOW */
+textarea, [data-testid="stFileUploader"] {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* EXPANDER */
-[data-testid="stExpander"] {
-    background-color: #111827;
-    border-radius: 12px;
-    border: 1px solid #374151;
+/* HIDE STREAMLIT FOOTER */
+footer {
+    visibility: hidden;
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 # -------- LOAD DATA -------- #
 with open("candidates.json") as f:
     candidates = json.load(f)
