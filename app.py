@@ -5,15 +5,11 @@ from brain import analyze_job_and_match, ai_extract_requirements, ai_assess_inte
 
 st.set_page_config(layout="wide")
 
-# ─────────────────────────────────────────
 # Load candidates
-# ─────────────────────────────────────────
 with open("candidates.json") as f:
     candidates = json.load(f)
 
-# ─────────────────────────────────────────
 # Session state
-# ─────────────────────────────────────────
 for k, v in {
     "results": [],
     "chat_step": 0,
@@ -23,9 +19,7 @@ for k, v in {
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ─────────────────────────────────────────
-# File reader
-# ─────────────────────────────────────────
+
 def read_file(file):
     if file is None:
         return ""
@@ -37,9 +31,7 @@ def read_file(file):
         return text
     return file.read().decode("utf-8")
 
-# ─────────────────────────────────────────
-# UI
-# ─────────────────────────────────────────
+
 st.title("🤖 AI Talent Scouting Agent")
 
 st.markdown("""
@@ -52,9 +44,8 @@ jd_input = st.text_area("📋 Or paste Job Description")
 
 jd = read_file(uploaded) if uploaded else jd_input
 
-# ─────────────────────────────────────────
-# Run Matching
-# ─────────────────────────────────────────
+
+# ---------------- FIND CANDIDATES ---------------- #
 if st.button("Find Candidates"):
 
     if not jd.strip():
@@ -70,19 +61,23 @@ if st.button("Find Candidates"):
     for c in candidates:
         r = analyze_job_and_match(jd, c, skills, exp, role)
 
-        # 🔥 smarter base interest (removes flat scores)
-        base_interest = min(100, 50 + (c["experience"] * 2))
+        # 🔥 Stable base interest (no randomness)
+        base_interest = min(70, 50 + c["experience"] * 2)
 
         interest = st.session_state.interest_scores.get(c["name"], base_interest)
 
-        final = round(0.7 * r["match_score"] + 0.3 * interest, 2)
+        # 🔥 FINAL FIX: skill dominance
+        final = round(0.8 * r["match_score"] + 0.2 * interest, 2)
+
+        if r["match_score"] < 50:
+            final *= 0.9
 
         results.append({
             "name": c["name"],
             "exp": c["experience"],
             "match": r["match_score"],
             "interest": interest,
-            "final": final,
+            "final": round(final, 2),
             "reason": r["reason"]
         })
 
@@ -90,9 +85,8 @@ if st.button("Find Candidates"):
 
     st.success("✅ AI Agent completed analysis")
 
-# ─────────────────────────────────────────
-# Display Results
-# ─────────────────────────────────────────
+
+# ---------------- DISPLAY ---------------- #
 if st.session_state.results:
     st.subheader("📊 Ranked Candidates")
 
@@ -110,41 +104,29 @@ if st.session_state.results:
             st.markdown("### 🧠 Recruiter Insight")
             st.write(r["reason"])
 
-            interest = st.session_state.interest_scores.get(
-                r["name"],
-                min(100, 50 + (r["exp"] * 2))
-            )
-
             col1, col2, col3 = st.columns(3)
 
             with col1:
                 st.metric("Match Score", f"{r['match']}%")
 
             with col2:
-                st.metric("Interest Score", f"{interest}%")
+                st.metric("Interest Score", f"{r['interest']}%")
 
             with col3:
-                confidence = round((r["match"] + interest) / 2, 2)
+                confidence = round((r["match"] + r["interest"]) / 2, 2)
                 st.metric("Confidence", f"{confidence}%")
 
-            st.progress(min(max(r["match"], 0), 100) / 100)
+            st.progress(r["match"] / 100)
 
-            st.markdown("### 📊 Why Ranked Here")
-            st.write(
-                f"This candidate is ranked based on match ({r['match']}%) "
-                f"and interest ({interest}%)."
-            )
-
-            st.info("📊 Final Score = 70% Match + 30% Interest")
+            st.info("📊 Final Score = 80% Match + 20% Interest")
 
             if st.button(f"💬 Engage {r['name']}", key=f"eng_{r['name']}"):
                 st.session_state.active_chat = r["name"]
                 st.session_state.chat_step = 0
-                st.session_state.interest_scores[r["name"]] = interest
+                st.session_state.interest_scores[r["name"]] = r["interest"]
 
-# ─────────────────────────────────────────
-# Chat Agent
-# ─────────────────────────────────────────
+
+# ---------------- CHAT ---------------- #
 if st.session_state.active_chat:
     st.subheader(f"💬 Chat with {st.session_state.active_chat}")
 
@@ -164,6 +146,7 @@ if st.session_state.active_chat:
 
         if st.button("Send", key=f"send_{step}"):
             if user_input.strip():
+
                 delta = ai_assess_interest(user_input)
 
                 name = st.session_state.active_chat
@@ -181,17 +164,16 @@ if st.session_state.active_chat:
 
         st.success(f"✅ Final Interest Score: {final_interest}%")
 
-        # 🔥 Re-rank after chat
         updated = []
-        for r in st.session_state.results:
-            interest = st.session_state.interest_scores.get(
-                r["name"],
-                min(100, 50 + (r["exp"] * 2))
-            )
-            final = round(0.7 * r["match"] + 0.3 * interest, 2)
 
-            r["interest"] = interest
-            r["final"] = final
+        for r in st.session_state.results:
+            interest = st.session_state.interest_scores.get(r["name"], r["interest"])
+            final = round(0.8 * r["match"] + 0.2 * interest, 2)
+
+            if r["match"] < 50:
+                final *= 0.9
+
+            r["final"] = round(final, 2)
             updated.append(r)
 
         st.session_state.results = sorted(updated, key=lambda x: x["final"], reverse=True)
