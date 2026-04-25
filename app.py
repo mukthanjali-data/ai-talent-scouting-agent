@@ -27,16 +27,16 @@ textarea, input {
 
 /* BUTTON */
 .stButton>button {
-    background: linear-gradient(to right, #2563eb, #3b82f6);
+    background: linear-gradient(to right, #2563eb, #60a5fa);
     font-weight: 600;
     border-radius: 10px;
-}
+    padding: 10px 20px;
+}}
 
 /* CARD EFFECT */
-.block-container {
-    padding: 2rem;
+[data-testid="stFileUploader"], textarea {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-
 /* EXPANDER */
 [data-testid="stExpander"] {
     background-color: #111827;
@@ -80,7 +80,10 @@ def read_file(file):
 
 
 # -------- HEADER -------- #
-st.markdown("# 🤖 TalentAI Scout")
+st.markdown("""
+<h1 style='font-size:40px;'>🤖 TalentAI Scout</h1>
+<p style='color:#94a3b8;'>AI-powered intelligent hiring system</p>
+""", unsafe_allow_html=True)
 st.markdown("### 🚀 Intelligent AI Recruitment Agent")
 
 st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
