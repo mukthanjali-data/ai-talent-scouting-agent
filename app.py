@@ -8,18 +8,47 @@ st.set_page_config(layout="wide")
 # -------- UI THEME -------- #
 st.markdown("""
 <style>
-.stApp {
-    background: linear-gradient(to right, #0f172a, #1e293b);
-    color: white;
+
+/* INPUT BOX FIX */
+textarea, input {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
+    border-radius: 10px !important;
+    border: 1px solid #374151 !important;
 }
-h1, h2, h3 {
-    color: #f8fafc;
+
+/* FILE UPLOADER */
+[data-testid="stFileUploader"] {
+    background-color: #111827;
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid #374151;
 }
+
+/* BUTTON */
 .stButton>button {
-    background-color: #3b82f6;
-    color: white;
-    border-radius: 8px;
+    background: linear-gradient(to right, #2563eb, #3b82f6);
+    font-weight: 600;
+    border-radius: 10px;
 }
+
+/* CARD EFFECT */
+.block-container {
+    padding: 2rem;
+}
+
+/* EXPANDER */
+[data-testid="stExpander"] {
+    background-color: #111827;
+    border-radius: 12px;
+    border: 1px solid #374151;
+}
+
+/* SUCCESS / INFO BOX */
+.stAlert {
+    border-radius: 10px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
