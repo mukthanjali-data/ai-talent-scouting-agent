@@ -1,22 +1,3 @@
-[
-  {
-    "name": "Ravi Kumar",
-    "skills": ["Python", "SQL", "Excel"],
-    "experience": 2
-  },
-  {
-    "name": "Anita Sharma",
-    "skills": ["Excel", "Power BI", "SQL"],
-    "experience": 3
-  },
-  {
-    "name": "Rahul Verma",
-    "skills": ["Python", "Machine Learning"],
-    "experience": 1
-  },
-  {
-    "name": "Sneha Reddy",
-    "skills": ["SQL", "Tableau", "Excel"],
-    "experience": 4
-  }
-]
+streamlit
+python-dotenv
+google-genai
