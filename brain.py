@@ -1,112 +1,139 @@
-import re
+import streamlit as st
+import json
+import docx
+from PyPDF2 import PdfReader
+from brain import analyze, extract_requirements, interest_score
 
-# -------- EXPERIENCE --------
-def extract_experience(text):
-    text = text.lower()
+st.set_page_config(layout="wide")
 
-    m = re.search(r'(\d+)\s*[-–]\s*(\d+)\s*year', text)
-    if m:
-        return (int(m.group(1)), int(m.group(2)))
+# ---------- CSS ----------
+st.markdown("""
+<style>
+.stApp {background: linear-gradient(to right,#0f172a,#1e293b);}
+h1,h2,h3,p,label {color:white;}
+textarea {background:#111827;color:white;border-radius:10px;}
+.stButton>button {
+    background: linear-gradient(to right,#2563eb,#3b82f6);
+    color:white;
+    border-radius:10px;
+    padding:10px;
+    font-weight:600;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    m = re.search(r'(\d+)\+?\s*year', text)
-    if m:
-        val = int(m.group(1))
-        return (val, val + 2)
+# ---------- HEADER ----------
+st.title("🤖 TalentAI Scout")
+st.caption("AI-powered intelligent hiring system")
+st.markdown("JD → AI Parsing → Matching → Chat → Interest → Ranking")
 
-    return (1, 3)
+# ---------- FILE READER ----------
+def read_file(file):
+    if file is None:
+        return ""
 
-# -------- JD PARSER --------
-def extract_requirements(jd):
-    jd = jd.lower()
+    if file.name.endswith(".pdf"):
+        reader = PdfReader(file)
+        return " ".join([p.extract_text() or "" for p in reader.pages])
 
-    if "sales" in jd:
-        role = "Sales Executive"
-        skills = ["sales", "communication", "crm"]
+    elif file.name.endswith(".docx"):
+        doc = docx.Document(file)
+        return " ".join([p.text for p in doc.paragraphs])
 
-    elif "data" in jd:
-        role = "Data Analyst"
-        skills = ["python", "sql", "excel", "power bi"]
+    elif file.name.endswith(".txt"):
+        return file.read().decode()
+
+    return ""
+
+# ---------- INPUT ----------
+st.subheader("📄 Job Description")
+
+jd_file = st.file_uploader("Upload JD", ["pdf","docx","txt"], key="jd")
+jd_text = st.text_area("Paste JD", key="jd_text")
+
+jd = read_file(jd_file) if jd_file else jd_text
+
+# ---------- BUTTONS ----------
+col1, col2 = st.columns(2)
+
+find_btn = col1.button("🔍 Find Candidates")
+eval_btn = col2.button("🎯 Evaluate Candidate")
+
+# ---------- FIND CANDIDATES ----------
+if find_btn:
+    if not jd:
+        st.warning("Please provide JD")
+    else:
+        skills, exp, role = extract_requirements(jd)
+
+        st.success(f"🎯 Role: {role} | ⏳ Exp: {exp[0]}–{exp[1]} yrs")
+
+        with open("candidates.json") as f:
+            data = json.load(f)
+
+        st.session_state["results"] = []
+
+        for c in data:
+            text = " ".join(c["skills"]) + f" {c['experience']} years"
+            res = analyze(jd, text)
+
+            st.session_state["results"].append({
+                "name": c["name"],
+                "res": res
+            })
+
+# ---------- DISPLAY RESULTS ----------
+if "results" in st.session_state:
+
+    for r in st.session_state["results"]:
+        name = r["name"]
+        res = r["res"]
+
+        with st.expander(f"{name} — {res['match_score']}%"):
+
+            st.write(f"🎯 Match Score: {res['match_score']}%")
+
+            st.write("✅ Matched Skills:")
+            st.markdown(", ".join(res["matched"]) if res["matched"] else "None")
+
+            st.write("❌ Missing Skills:")
+            st.markdown(", ".join(res["missing"]) if res["missing"] else "None")
+
+            # ---------- CHAT ----------
+            ans = st.text_input(
+                f"💬 Ask {name}: Are you interested?",
+                key=f"chat_{name}"
+            )
+
+            if ans:
+                i_score = interest_score(ans)
+                final = round(0.7 * res["match_score"] + 0.3 * i_score, 2)
+
+                st.success(f"📊 Interest Score: {i_score}")
+                st.success(f"🏆 Final Score: {final}")
+
+# ---------- EVALUATE ----------
+if eval_btn:
+
+    st.subheader("🎯 Evaluate Candidate")
+
+    resume_file = st.file_uploader("Upload Resume", ["pdf","docx","txt"], key="resume")
+    resume_text = st.text_area("Paste Resume", key="resume_text")
+
+    resume = read_file(resume_file) if resume_file else resume_text
+
+    if resume and jd:
+        result = analyze(jd, resume)
+
+        st.success("Evaluation Complete")
+
+        st.write(f"🎯 Match Score: {result['match_score']}%")
+
+        st.write("✅ Matched Skills:")
+        st.markdown(", ".join(result["matched"]) if result["matched"] else "None")
+
+        st.write("❌ Missing Skills:")
+        st.markdown(", ".join(result["missing"]) if result["missing"] else "None")
 
     else:
-        role = "General Role"
-        skills = ["communication"]
-
-    exp = extract_experience(jd)
-
-    return skills, exp, role
-
-# -------- RESUME PARSER --------
-def extract_candidate_profile(text):
-    text = text.lower()
-    skills = []
-
-    if "sales" in text:
-        skills.append("sales")
-
-    if "crm" in text or "salesforce" in text:
-        skills.append("crm")
-
-    if "python" in text:
-        skills.append("python")
-
-    if "sql" in text:
-        skills.append("sql")
-
-    if "excel" in text:
-        skills.append("excel")
-
-    if any(w in text for w in [
-        "client", "customer", "relationship",
-        "negotiation", "presentation"
-    ]):
-        skills.append("communication")
-
-    matches = re.findall(r'(\d+)\+?\s*year', text)
-    exp = sum(map(int, matches)) if matches else 1
-
-    return {
-        "skills": list(set(skills)),
-        "experience": exp
-    }
-
-# -------- MATCH SCORE --------
-def match_score(candidate, req_skills, req_exp):
-    matched = [s for s in candidate["skills"] if s in req_skills]
-
-    skill_score = (len(matched) / len(req_skills)) * 70
-
-    min_exp, max_exp = req_exp
-
-    if candidate["experience"] < min_exp:
-        exp_score = 10
-    elif min_exp <= candidate["experience"] <= max_exp:
-        exp_score = 30
-    else:
-        exp_score = 20
-
-    return round(skill_score + exp_score, 2), matched
-
-# -------- INTEREST SCORE --------
-def interest_score(answer):
-    a = answer.lower()
-    if "yes" in a:
-        return 90
-    elif "maybe" in a:
-        return 60
-    else:
-        return 30
-
-# -------- FINAL ANALYSIS --------
-def analyze(jd, resume_text):
-    req_skills, req_exp, role = extract_requirements(jd)
-    candidate = extract_candidate_profile(resume_text)
-
-    m_score, matched = match_score(candidate, req_skills, req_exp)
-    missing = [s for s in req_skills if s not in matched]
-
-    return {
-        "match_score": m_score,
-        "matched": matched,
-        "missing": missing,
-        "role": role
-    }
+        st.warning("Provide both JD and Resume")
