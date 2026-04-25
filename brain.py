@@ -10,7 +10,7 @@ api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
 
-# ---------------- EXPERIENCE ---------------- #
+# -------- EXPERIENCE -------- #
 def extract_experience(jd):
     jd = jd.lower()
 
@@ -33,7 +33,7 @@ def safe_json(text):
         return None
 
 
-# ---------------- JD PARSING ---------------- #
+# -------- JD PARSING -------- #
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
@@ -42,7 +42,7 @@ def ai_extract_requirements(jd):
 Extract job role, skills, experience.
 
 Return JSON:
-{{"role":"","skills":[],"experience":number or [min,max]}}
+{{"role":"","skills":[],"experience":[min,max]}}
 
 JD:
 {jd}
@@ -61,14 +61,7 @@ JD:
 
         role = data.get("role", "")
         skills = data.get("skills", [])
-
-        raw_exp = data.get("experience", None)
-        if isinstance(raw_exp, list) and len(raw_exp) == 2:
-            exp = (int(raw_exp[0]), int(raw_exp[1]))
-        elif isinstance(raw_exp, int):
-            exp = (raw_exp, raw_exp)
-        else:
-            exp = fallback_exp
+        exp = tuple(data.get("experience", fallback_exp))
 
     except:
         pass
@@ -90,20 +83,17 @@ JD:
     return [s.lower() for s in skills[:6]], exp, role
 
 
-# ---------------- SCORING ---------------- #
+# -------- SCORING -------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
     matched = [s for s in c_skills if s in req_skills]
 
-    # Skill score
     skill_score = (len(matched) / max(len(req_skills), 1)) * 60 if matched else 25
 
-    # Boost for good match
     if len(matched) >= 2:
         skill_score += 10
 
-    # Experience score
     min_exp, max_exp = req_exp
 
     if candidate["experience"] < min_exp:
@@ -118,46 +108,8 @@ def rule_score(candidate, req_skills, req_exp):
     return round(min(total, 100), 2), matched
 
 
-# ---------------- AI MATCH ---------------- #
-def ai_match(jd, candidate):
-
-    prompt = f"""
-You are a recruiter.
-
-Evaluate candidate for job.
-
-JD:
-{jd}
-
-Candidate:
-Skills: {candidate['skills']}
-Experience: {candidate['experience']}
-
-Return JSON:
-{{"score":number,"reason":""}}
-"""
-
-    try:
-        resp = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt,
-            config={"response_mime_type": "application/json"}
-        )
-
-        data = safe_json(resp.text)
-
-        if data:
-            return data.get("score"), data.get("reason")
-
-    except:
-        pass
-
-    return None, None
-
-
-# ---------------- INTEREST ---------------- #
+# -------- INTEREST -------- #
 def ai_assess_interest(ans):
-
     a = ans.lower()
 
     if "yes" in a or "interested" in a:
@@ -169,30 +121,21 @@ def ai_assess_interest(ans):
     return 0
 
 
-# ---------------- MAIN ---------------- #
+# -------- MAIN -------- #
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
         skills, exp, role = ai_extract_requirements(jd)
 
-    rule_s, matched = rule_score(candidate, skills, exp)
+    score, matched = rule_score(candidate, skills, exp)
 
-    ai_s, _ = ai_match(jd, candidate)
-
-    if ai_s:
-        final = round(0.65 * ai_s + 0.35 * rule_s, 2)
-    else:
-        final = rule_s
-
-    # ---------- FINAL DECISION LEVEL ----------
-    if final > 65:
+    if score > 65:
         level = "strong"
-    elif final > 50:
+    elif score > 50:
         level = "good"
     else:
         level = "weak"
 
-    # ---------- REASONING ----------
     missing = [s for s in skills if s not in matched]
 
     skill_text = ", ".join(matched[:2]) if matched else "limited matching skills"
@@ -200,11 +143,11 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     reason = (
         f"{candidate['name']} has {candidate['experience']} years experience and matches {skill_text}. "
-        f"However, there are {gap}. This candidate is a {level} fit based on skills and experience alignment."
+        f"However, there are {gap}. This candidate is a {level} fit based on alignment of required skills and experience."
     )
 
     return {
-        "match_score": final,
+        "match_score": score,
         "matched_skills": matched if matched else ["None"],
         "reason": reason,
         "role": role
