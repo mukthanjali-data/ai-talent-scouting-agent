@@ -35,6 +35,7 @@ def safe_json(text):
 
 # -------- JD PARSING -------- #
 def ai_extract_requirements(jd):
+
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
@@ -57,6 +58,7 @@ JD:
         )
 
         data = safe_json(resp.text) or {}
+
         role = data.get("role", "")
         skills = data.get("skills", [])
         exp = tuple(data.get("experience", fallback_exp))
@@ -64,7 +66,6 @@ JD:
     except:
         pass
 
-    # fallback logic
     text = jd.lower()
 
     if "data" in text:
@@ -104,6 +105,7 @@ def rule_score(candidate, req_skills, req_exp):
         exp_score = 20
 
     total = skill_score + exp_score
+
     return round(min(total, 100), 2), matched
 
 
@@ -129,24 +131,9 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     missing = [s for s in skills if s not in matched]
 
-    if score >= 70:
-        level = "Strong Fit"
-    elif score >= 55:
-        level = "Good Fit"
-    else:
-        level = "Weak Fit"
-
-    reason = (
-        f"{candidate['name']} has {candidate['experience']} years experience. "
-        f"Matches: {matched if matched else 'few skills'}. "
-        f"Missing: {missing[:2] if missing else 'none'}. "
-        f"Overall: {level}."
-    )
-
     return {
         "match_score": score,
-        "matched_skills": matched if matched else [],
+        "matched_skills": matched,
         "missing_skills": missing,
-        "reason": reason,
         "role": role
     }
