@@ -10,16 +10,14 @@ api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 client = genai.Client(api_key=api_key)
 
 
-# ---------------- HELPERS ---------------- #
+# ---------------- EXPERIENCE ---------------- #
 def extract_experience(jd):
     jd = jd.lower()
 
-    # Range: 2-5 or 2–5 years
     m = re.search(r'(\d+)\s*[-–]\s*(\d+)\s*year', jd)
     if m:
         return (int(m.group(1)), int(m.group(2)))
 
-    # Single value: 3+ years / 3 years
     m = re.search(r'(\d+)\+?\s*year', jd)
     if m:
         val = int(m.group(1))
@@ -41,7 +39,7 @@ def ai_extract_requirements(jd):
     fallback_exp = extract_experience(jd)
 
     prompt = f"""
-Extract job role, skills, and experience.
+Extract job role, skills, experience.
 
 Return JSON:
 {{"role":"","skills":[],"experience":number or [min,max]}}
@@ -58,6 +56,7 @@ JD:
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
+
         data = safe_json(resp.text) or {}
 
         role = data.get("role", "")
@@ -76,7 +75,6 @@ JD:
 
     text = jd.lower()
 
-    # Fallback semantic enrichment
     if "data" in text:
         role = role or "Data Analyst"
         skills = skills or ["python", "sql", "excel", "power bi", "tableau"]
@@ -98,14 +96,14 @@ def rule_score(candidate, req_skills, req_exp):
     c_skills = [s.lower() for s in candidate["skills"]]
     matched = [s for s in c_skills if s in req_skills]
 
-    # Skill scoring
+    # Skill score
     skill_score = (len(matched) / max(len(req_skills), 1)) * 60 if matched else 25
 
-    # Bonus for strong partial match
+    # Boost for good match
     if len(matched) >= 2:
         skill_score += 10
 
-    # Experience scoring
+    # Experience score
     min_exp, max_exp = req_exp
 
     if candidate["experience"] < min_exp:
@@ -186,7 +184,15 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
     else:
         final = rule_s
 
-    # Explanation
+    # ---------- FINAL DECISION LEVEL ----------
+    if final > 65:
+        level = "strong"
+    elif final > 50:
+        level = "good"
+    else:
+        level = "weak"
+
+    # ---------- REASONING ----------
     missing = [s for s in skills if s not in matched]
 
     skill_text = ", ".join(matched[:2]) if matched else "limited matching skills"
@@ -194,8 +200,7 @@ def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     reason = (
         f"{candidate['name']} has {candidate['experience']} years experience and matches {skill_text}. "
-        f"However, there are {gap}. This candidate is a "
-        f"{'strong' if final > 70 else 'moderate'} fit based on skills and experience alignment."
+        f"However, there are {gap}. This candidate is a {level} fit based on skills and experience alignment."
     )
 
     return {
