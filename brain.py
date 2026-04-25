@@ -20,7 +20,7 @@ def extract_experience(jd):
     m = re.search(r'(\d+)\+?\s*year', jd)
     if m:
         val = int(m.group(1))
-        return (val, val)
+        return (val, val + 2)
 
     return (2, 5)
 
@@ -31,7 +31,7 @@ def safe_json(text):
     except:
         return None
 
-# -------- JD PARSING -------- #
+# -------- JD PARSER -------- #
 def ai_extract_requirements(jd):
 
     fallback_exp = extract_experience(jd)
@@ -80,7 +80,7 @@ JD:
 
     return [s.lower() for s in skills[:6]], exp, role
 
-# -------- MATCHING -------- #
+# -------- MATCH SCORE -------- #
 def rule_score(candidate, req_skills, req_exp):
 
     c_skills = [s.lower() for s in candidate["skills"]]
@@ -105,7 +105,6 @@ def rule_score(candidate, req_skills, req_exp):
 # -------- INTEREST -------- #
 def ai_assess_interest(ans):
     a = ans.lower()
-
     if "yes" in a:
         return 10
     elif "no" in a:
@@ -114,7 +113,7 @@ def ai_assess_interest(ans):
         return 5
     return 0
 
-# -------- SINGLE PROFILE -------- #
+# -------- PROFILE PARSER -------- #
 def extract_candidate_profile(text):
 
     text = text.lower()
@@ -135,7 +134,7 @@ def extract_candidate_profile(text):
         "experience": exp
     }
 
-# -------- FINAL -------- #
+# -------- FINAL MATCH -------- #
 def analyze_job_and_match(jd, candidate, skills=None, exp=None, role=None):
 
     if skills is None:
