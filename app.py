@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import pandas as pd
 from PyPDF2 import PdfReader
 from brain import analyze_job_and_match, ai_extract_requirements, ai_assess_interest
 
@@ -9,95 +10,104 @@ st.set_page_config(layout="wide")
 with open("candidates.json") as f:
     candidates = json.load(f)
 
+# -------- SIDEBAR (RECRUITER SETTINGS) -------- #
+st.sidebar.header("⚙️ Recruiter Settings")
+
+match_weight = st.sidebar.slider("Match Weight", 0.5, 1.0, 0.8)
+interest_weight = 1 - match_weight
+
+min_exp_filter = st.sidebar.slider("Min Experience", 0, 10, 0)
+max_exp_filter = st.sidebar.slider("Max Experience", 0, 10, 10)
+
+top_n = st.sidebar.slider("Top Candidates", 1, 10, 5)
+threshold = st.sidebar.slider("Min Score %", 0, 100, 40)
+
+strict_mode = st.sidebar.checkbox("Strict Skill Match")
+
 # -------- HELPERS -------- #
 def read_file(file):
     if file is None:
         return ""
     if file.type == "application/pdf":
         reader = PdfReader(file)
-        text = ""
-        for p in reader.pages:
-            text += p.extract_text() or ""
-        return text
+        return "".join([p.extract_text() or "" for p in reader.pages])
     return file.read().decode("utf-8")
 
 # -------- HEADER -------- #
 st.title("🤖 TalentAI Scout")
 st.caption("AI-powered intelligent hiring system")
 
-st.markdown("### 🚀 Intelligent AI Recruitment Agent")
-st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
-
-# -------- INPUT -------- #
-uploaded = st.file_uploader("Upload JD", ["pdf", "txt"])
+jd_file = st.file_uploader("Upload JD", ["pdf", "txt"])
 jd_input = st.text_area("Paste JD", height=180)
-jd = read_file(uploaded) if uploaded else jd_input
+jd = read_file(jd_file) if jd_file else jd_input
 
 linkedin = st.text_input("🔗 LinkedIn Profile (optional)")
 resume = st.file_uploader("Upload Resume (optional)", ["pdf", "txt"])
 
-# -------- PROCESS -------- #
+# -------- MAIN -------- #
 if st.button("🔍 Find Candidates", use_container_width=True):
 
     if not jd.strip():
-        st.warning("Enter JD")
+        st.warning("Please enter JD")
         st.stop()
 
     skills, exp, role = ai_extract_requirements(jd)
-    st.success(f"Role: {role} | Experience: {exp[0]}–{exp[1]} yrs")
+    st.success(f"Role: {role} | Exp: {exp[0]}–{exp[1]} yrs")
 
     results = []
 
     for c in candidates:
 
+        if not (min_exp_filter <= c["experience"] <= max_exp_filter):
+            continue
+
         r = analyze_job_and_match(jd, c, skills, exp, role)
 
-        interest = 60  # base stable
+        if strict_mode and len(r["matched_skills"]) == 0:
+            continue
 
-        final = round(0.8 * r["match_score"] + 0.2 * interest, 2)
+        interest = 60
 
-        # differentiation
+        final = round(
+            match_weight * r["match_score"] + interest_weight * interest, 2
+        )
+
         if r["match_score"] >= 70:
-            final += 3
-        elif r["match_score"] < 50:
-            final -= 3
+            decision = "Recommended"
+        elif r["match_score"] >= 55:
+            decision = "Consider"
+        else:
+            decision = "Reject"
 
         results.append({
             "name": c["name"],
             "match": r["match_score"],
             "final": final,
-            "reason": r["reason"],
             "skills": r["matched_skills"],
-            "missing": r["missing_skills"]
+            "missing": r["missing_skills"],
+            "decision": decision
         })
 
     results = sorted(results, key=lambda x: x["final"], reverse=True)
+    results = [r for r in results if r["final"] >= threshold][:top_n]
 
-    top = results[0]
-    st.success(f"🏆 Top Candidate: {top['name']} ({top['final']}%)")
+    if not results:
+        st.warning("No candidates match filters")
+        st.stop()
+
+    st.success(f"🏆 Top Candidate: {results[0]['name']} ({results[0]['final']}%)")
 
     # -------- DISPLAY -------- #
     for r in results:
-
         with st.expander(f"{r['name']} — {r['final']}%"):
 
-            if r["match"] >= 70:
-                decision = "Recommended"
-                st.success("Strong Fit")
-            elif r["match"] >= 55:
-                decision = "Consider"
-                st.info("Good Fit")
-            else:
-                decision = "Reject"
-                st.warning("Needs Improvement")
-
-            st.write("🧠 Recruiter Insight:")
-            st.write(r["reason"])
-
-            st.write("✅ Matched Skills:", r["skills"])
-            st.write("❌ Missing Skills:", r["missing"][:3])
-
-            st.write(f"🎯 Hiring Decision: {decision}")
+            st.write(f"🎯 Decision: {r['decision']}")
+            st.write("✅ Matched:", r["skills"])
+            st.write("❌ Missing:", r["missing"][:3])
 
             if linkedin:
-                st.markdown(f"[🔗 View LinkedIn]({linkedin})")
+                st.markdown(f"[View LinkedIn]({linkedin})")
+
+    # -------- DOWNLOAD -------- #
+    df = pd.DataFrame(results)
+    st.download_button("📥 Download CSV", df.to_csv(index=False), "results.csv")
