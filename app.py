@@ -17,12 +17,14 @@ h1,h2,h3,p,label {
     color:#f8fafc !important;
 }
 
+/* Text area */
 .stTextArea textarea {
     background:#111827 !important;
     color:white !important;
     border-radius:10px;
 }
 
+/* Button */
 .stButton>button {
     background: linear-gradient(to right,#3b82f6,#2563eb);
     color:white;
@@ -30,6 +32,7 @@ h1,h2,h3,p,label {
     font-weight:600;
 }
 
+/* Upload box */
 [data-testid="stFileUploader"] {
     background:#111827;
     border-radius:10px;
@@ -37,12 +40,10 @@ h1,h2,h3,p,label {
     border:1px solid #374151;
 }
 
-[data-testid="stExpander"] {
-    background:#111827;
-    border-radius:10px;
-    border:1px solid #374151;
+/* Hide file type text */
+[data-testid="stFileUploader"] small {
+    display: none !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -54,9 +55,6 @@ def read_file(file):
     if file.name.endswith(".pdf"):
         reader = PdfReader(file)
         return "".join([p.extract_text() or "" for p in reader.pages])
-
-    elif file.name.endswith(".txt"):
-        return file.read().decode("utf-8")
 
     elif file.name.endswith(".docx"):
         doc = docx.Document(file)
@@ -72,18 +70,18 @@ with open("candidates.json") as f:
 st.title("🤖 TalentAI Scout")
 st.caption("AI-powered intelligent hiring system")
 
-st.info("JD → AI Parsing → Matching → Chat → Interest → Ranking")
+st.info("JD → AI Parsing → Matching → Ranking")
 
 # ---------- LAYOUT ----------
 col1, col2 = st.columns(2)
 
 # =========================================================
-# LEFT: FIND CANDIDATES
+# 🔵 LEFT: FIND CANDIDATES (JD)
 # =========================================================
 with col1:
     st.subheader("🔍 Find Candidates")
 
-    jd_file = st.file_uploader("Upload JD", ["pdf","txt","docx"])
+    jd_file = st.file_uploader("Upload JD", ["pdf","docx"])
     jd_text = st.text_area("Paste JD")
 
     jd = read_file(jd_file) if jd_file else jd_text
@@ -91,7 +89,7 @@ with col1:
     if st.button("Find Candidates"):
 
         if not jd.strip():
-            st.warning("Enter JD")
+            st.warning("Please enter JD")
             st.stop()
 
         skills, exp, role = ai_extract_requirements(jd)
@@ -119,40 +117,37 @@ with col1:
         for r in results:
             with st.expander(f"{r['name']} — {r['score']}%"):
                 st.write("Decision:",r["decision"])
-                st.write("Matched:",r["matched"])
-                st.write("Missing:",r["missing"][:3])
+                st.write("Matched Skills:",r["matched"])
+                st.write("Missing Skills:",r["missing"][:3])
+
 
 # =========================================================
-# RIGHT: EVALUATE SINGLE CANDIDATE
+# 🟢 RIGHT: EVALUATE CANDIDATE (RESUME ONLY)
 # =========================================================
 with col2:
     st.subheader("🎯 Evaluate Candidate")
 
-    jd_file2 = st.file_uploader("Upload JD", ["pdf","txt","docx"], key="jd2")
-    jd_text2 = st.text_area("Paste JD", key="jd_text2")
+    resume_file = st.file_uploader("Upload Resume", ["pdf","docx"])
+    resume_text = st.text_area("Paste Resume")
 
-    resume_file = st.file_uploader("Upload Resume", ["pdf","txt","docx"])
-    linkedin_text = st.text_area("Paste LinkedIn/Profile")
-
-    jd2 = read_file(jd_file2) if jd_file2 else jd_text2
+    resume = read_file(resume_file) if resume_file else resume_text
 
     if st.button("Evaluate Candidate"):
 
-        if not jd2.strip():
-            st.warning("Enter JD")
+        if not resume.strip():
+            st.warning("Please provide resume")
             st.stop()
 
-        profile = linkedin_text if linkedin_text else read_file(resume_file)
+        candidate = extract_candidate_profile(resume)
 
-        if not profile:
-            st.warning("Provide Resume or LinkedIn")
+        # 🔥 Use JD from LEFT side (same role)
+        if not jd.strip():
+            st.warning("Please enter JD in left section first")
             st.stop()
 
-        candidate = extract_candidate_profile(profile)
+        skills, exp, role = ai_extract_requirements(jd)
 
-        skills, exp, role = ai_extract_requirements(jd2)
-
-        r = analyze_job_and_match(jd2, candidate, skills, exp, role)
+        r = analyze_job_and_match(jd, candidate, skills, exp, role)
 
         score = r["match_score"]
 
@@ -162,5 +157,5 @@ with col2:
 
         st.write(f"Score: {score}%")
         st.write(f"Decision: {decision}")
-        st.write("Matched:",r["matched_skills"])
-        st.write("Missing:",r["missing_skills"][:3])
+        st.write("Matched Skills:",r["matched_skills"])
+        st.write("Missing Skills:",r["missing_skills"][:3])
