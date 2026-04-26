@@ -11,16 +11,52 @@ st.set_page_config(page_title="TalentAI Scout", layout="wide", page_icon="🤖")
 # ─────────────────────────────────────────
 st.markdown("""
 <style>
-    .stApp { background-color: #0f172a; color: #f8fafc; }
-    [data-testid="stHeader"] { background: rgba(0,0,0,0); }
-    .badge { background: #1e293b; color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; margin: 2px; display: inline-block; border: 1px solid #334155; }
-    .badge-missing { color: #f87171; border-color: #7f1d1d; }
-    .chat-ai { background: #1e293b; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid #6366f1; }
-    .chat-user { background: #064e3b; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: right; border-right: 4px solid #10b981; }
-    button[kind="primary"] { background: linear-gradient(135deg, #6366f1, #4f46e5) !important; color: white !important; width: 100%; border: none !important; padding: 10px !important; }
-    .jd-parsed { background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px; }
+
+/* ───────────── EVALUATE BUTTON (SPECIAL STYLE) ───────────── */
+button[kind="primary"] {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600;
+    border: none;
+}
+
+button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
+    box-shadow: 0 8px 20px rgba(79,70,229,0.4);
+}
+
+
+/* ───────────── FILE UPLOADER TEXT FIX ───────────── */
+div[data-testid="stFileUploader"] * {
+    color: white !important;
+}
+
+/* Upload button inside uploader */
+div[data-testid="stFileUploader"] button {
+    background: #1e293b !important;
+    color: white !important;
+    border: 1px solid #334155 !important;
+}
+
+/* Small helper text (200MB...) */
+div[data-testid="stFileUploader"] small {
+    color: #cbd5f5 !important;
+}
+
+
+/* ───────────── TEXTAREA BORDER IMPROVEMENT ───────────── */
+textarea {
+    border: 2px solid #cbd5e1 !important;
+}
+
+textarea:focus {
+    border: 2px solid #6366f1 !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 # ─────────────────────────────────────────
 # Session State
 # ─────────────────────────────────────────
