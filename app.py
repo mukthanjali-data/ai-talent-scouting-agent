@@ -11,62 +11,66 @@ st.set_page_config(page_title="TalentAI Scout", layout="wide", page_icon="🤖")
 # ─────────────────────────────────────────
 st.markdown("""
 <style>
-.stApp { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
-h1,h2,h3,h4,p,label,.stMarkdown { color: white !important; }
-.stTextArea textarea {
-    background: #111827 !important; color: white !important;
-    border-radius: 10px !important; border: 1px solid #334155 !important;
+.stApp {
+    background: #f8fafc;
 }
-.stTextInput input {
-    background: #111827 !important; color: white !important;
-    border-radius: 8px !important; border: 1px solid #334155 !important;
+
+/* TEXT */
+h1, h2, h3, h4, p, label {
+    color: #0f172a !important;
 }
+
+/* INPUT */
+.stTextArea textarea, .stTextInput input {
+    background: white !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+}
+
+/* BUTTON */
 .stButton > button {
-    background: linear-gradient(to right, #2563eb, #3b82f6) !important;
-    color: white !important; border-radius: 10px !important;
-    padding: 10px 20px !important; font-weight: 600 !important;
-    border: none !important; width: 100%;
-}
-.stButton > button:hover { background: linear-gradient(to right,#1d4ed8,#2563eb) !important; }
-.stExpander { background: #1e293b !important; border: 1px solid #334155 !important; border-radius: 12px !important; }
-.stMetric { background: #1e293b !important; border-radius: 10px !important; padding: 8px !important; border: 1px solid #334155; }
-.badge {
-    display: inline-block; background: #1e40af; color: #bfdbfe;
-    border-radius: 20px; padding: 3px 12px; font-size: 12px; margin: 2px; font-weight: 500;
-}
-.badge-missing { background: #7f1d1d; color: #fecaca; }
-.badge-neutral  { background: #1e3a5f; color: #93c5fd; }
-.chat-ai {
-    background: #1e3a5f; border-radius: 12px 12px 12px 0;
-    padding: 10px 16px; margin: 6px 0; max-width: 80%;
-    color: #e2e8f0; font-size: 14px;
-}
-.chat-user {
-    background: #14532d; border-radius: 12px 12px 0 12px;
-    padding: 10px 16px; margin: 6px 0; max-width: 80%;
-    margin-left: auto; color: #dcfce7; font-size: 14px; text-align: right;
-}
-.verdict-box {
-    border-radius: 12px; padding: 16px 20px;
-    font-size: 16px; font-weight: 600; margin-top: 12px;
-}
-.jd-parsed {
-    background: #0f2744; border-left: 4px solid #3b82f6;
-    border-radius: 8px; padding: 12px 16px; margin: 10px 0; color: #bfdbfe;
-}
-.eval-result {
-    background: #0f2744; border-left: 4px solid #10b981;
-    border-radius: 8px; padding: 14px 18px; margin: 10px 0; color: #d1fae5;
-}
-div[data-testid="stFileUploader"] label { color: white !important; }
-div[data-testid="stFileUploader"] {
-    border: 1px dashed #334155 !important;
-    border-radius: 10px !important; padding: 8px !important;
-}
-/* Form submit button */
-.stForm .stButton > button {
-    background: linear-gradient(to right, #2563eb, #3b82f6) !important;
+    background: linear-gradient(to right, #2563eb, #3b82f6);
     color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600;
+}
+
+/* CARD */
+.stMetric {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+/* BADGES */
+.badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.badge-missing {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* CHAT */
+.chat-ai {
+    background: #e0f2fe;
+    color: #0c4a6e;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.chat-user {
+    background: #dcfce7;
+    color: #166534;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: right;
 }
 </style>
 """, unsafe_allow_html=True)
