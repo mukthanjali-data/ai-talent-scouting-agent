@@ -6,7 +6,7 @@
 
 ---
 
-## 🌐 Live Demo
+## 🌐 Project Link
 
 👉 https://ai-talent-agent-muktha.streamlit.app/
 
