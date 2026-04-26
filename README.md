@@ -2,7 +2,7 @@
 ### *AI-Powered Intelligent Recruitment Agent*
 
 > 🚀 Hire smarter. Faster. Better.  
-> 🚀 Built for Catalyst Hackathon – Deccan AI Experts
+> 🚀 Built for Catalyst Hackathon – Deccan AI Experts  
 
 ---
 
@@ -10,7 +10,7 @@
 
 **TalentAI Scout** is an end-to-end AI recruitment system that automates the entire hiring workflow — from **Job Description parsing** to **candidate ranking and resume evaluation**.
 
-It helps recruiters **save time, improve accuracy, and make better hiring decisions using AI**.
+It enables recruiters to **save time, improve accuracy, and make better hiring decisions using AI**.
 
 ---
 
@@ -20,65 +20,70 @@ Recruiters today face multiple challenges:
 
 - ⏳ Manual resume screening takes hours  
 - ❌ Poor candidate-job matching  
-- 📞 No insight into candidate interest  
-- 🔄 Switching between multiple tools  
+- 📞 No visibility into candidate interest  
+- 🔄 Constant switching between multiple tools  
 
 ---
 
 ## 💡 Solution
 
-TalentAI Scout provides **one intelligent platform** that:
+TalentAI Scout provides a **unified intelligent platform** that:
 
 - 📄 Understands Job Descriptions using AI  
-- 🎯 Matches candidates based on skills & experience  
-- 💬 Simulates candidate interaction (Interest Check)  
+- 🎯 Matches candidates based on skills and experience  
+- 💬 Simulates candidate interaction (*Interest Check*)  
 - 🧠 Provides explainable insights  
-- 🏆 Ranks candidates automatically  
+- 🏆 Automatically ranks candidates  
 
 ---
 
 ## ⚙️ Core Features
 
 ### 📄 1. AI JD Parsing
-- Extracts role, skills, and experience automatically  
-- Works on real-world messy job descriptions  
+- Automatically extracts role, skills, and experience  
+- Handles real-world, unstructured job descriptions  
 
 ---
 
 ### 🎯 2. Smart Candidate Matching
-- Matches based on:
-  - Skills  
-  - Experience  
-- Outputs:
-  - Match Score  
-  - Matched Skills  
-  - Missing Skills  
-  - Recruiter Insight  
+Matches candidates based on:
+
+- Skills  
+- Experience  
+
+**Outputs:**
+- Match Score  
+- Matched Skills  
+- Missing Skills  
+- Recruiter Insight  
 
 ---
 
-### 💬 3. Interest Check (Unique Feature)
-- Simulates recruiter question:
-  > *"Are you open to this opportunity?"*
-- Generates **Interest Score**
-- Improves ranking accuracy  
+### 💬 3. Interest Check *(Unique Feature)*
+Simulates recruiter interaction:
+
+> *"Are you open to this opportunity?"*
+
+- Generates an **Interest Score**  
+- Enhances ranking accuracy  
 
 ---
 
 ### 🏆 4. Intelligent Ranking
-- Final Score = Match Score + Interest Score  
-- Helps recruiters shortlist faster  
+- **Final Score = Match Score + Interest Score**  
+- Enables faster and better shortlisting  
 
 ---
 
 ### 📋 5. Resume Evaluation
-- Upload or paste resume  
-- Compare with JD  
-- Get:
-  - Match %  
-  - Role Detection  
-  - Skill Gaps  
-  - Hiring Recommendation  
+- Upload or paste a resume  
+- Compare directly with Job Description  
+
+**Outputs:**
+- Match Percentage  
+- Role Detection  
+- Skill Gap Analysis  
+- Hiring Recommendation  
 
 ---
 
@@ -90,7 +95,7 @@ TalentAI Scout provides **one intelligent platform** that:
 | Experience Fit   | Medium |
 | Interest Score   | Medium |
 
-👉 Final Score = Combined intelligent ranking
+👉 **Final Score = Combined Intelligent Ranking**
 
 ---
 
@@ -105,19 +110,15 @@ TalentAI Scout provides **one intelligent platform** that:
 
 ## 📂 Project Structure
 
+```
 ai-talent-scout/
 │
-
-├── app.py # Streamlit UI
-
-├── brain.py # AI logic + scoring engine
-
-├── candidates.json # Candidate dataset
-
+├── app.py              # Streamlit UI
+├── brain.py            # AI logic + scoring engine
+├── candidates.json     # Candidate dataset
 ├── requirements.txt
-
 └── README.md
-
+```
 
 ---
 
@@ -126,27 +127,39 @@ ai-talent-scout/
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
+```
 
+---
 
-🔥 Key Highlights
+## 🔥 Key Highlights
 
-✔ AI-based JD understanding
-✔ Explainable candidate scoring
-✔ Interest-based ranking (unique)
-✔ Resume evaluation system
-✔ End-to-end recruitment workflow
+- ✅ AI-based JD understanding  
+- ✅ Explainable candidate scoring  
+- ✅ Interest-based ranking *(unique feature)*  
+- ✅ Resume evaluation system  
+- ✅ End-to-end recruitment workflow  
 
-📈 Impact
-⏱️ Saves 60%+ recruiter time
-🎯 Improves hiring accuracy
-🤖 Reduces manual effort
-👩‍💻 Author
+---
 
-Mukthanjali Bonala
-Aspiring Data Analyst | AI Enthusiast
+## 📈 Impact
 
-🏁 Conclusion
+- ⏱️ Saves **60%+ recruiter time**  
+- 🎯 Improves hiring accuracy  
+- 🔄 Reduces manual effort  
 
-TalentAI Scout transforms traditional hiring into a smart, AI-driven system, enabling recruiters to make faster, better, and more confident decisions.
+---
 
-⭐ If you like this project, consider giving it a star!
+## 👩‍💻 Author
+
+**Mukthanjali Bonala**  
+Aspiring Data Analyst | AI Enthusiast  
+
+---
+
+## 🏁 Conclusion
+
+**TalentAI Scout** transforms traditional hiring into a smart, AI-driven process — enabling recruiters to make **faster, more accurate, and confident decisions**.
+
+---
+
+⭐ *If you like this project, consider giving it a star!*
