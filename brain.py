@@ -205,3 +205,8 @@ def interest_score(answer):
     if "no" in ans:
         return 20
     return 50
+def analyze_candidate(jd_text, candidate):
+    return analyze(
+        jd_text,
+        " ".join(candidate.get("skills", [])) + f" {candidate.get('experience', 0)} years"
+    )
