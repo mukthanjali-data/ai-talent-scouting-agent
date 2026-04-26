@@ -11,48 +11,83 @@ st.set_page_config(page_title="TalentAI Scout", layout="wide", page_icon="🤖")
 # ─────────────────────────────────────────
 st.markdown("""
 <style>
-/* APP BACKGROUND */
+
+/* ───────────── APP BACKGROUND ───────────── */
 .stApp {
     background: #f8fafc;
 }
 
-/* TEXT */
+/* ───────────── TEXT ───────────── */
 h1, h2, h3, h4, p, label, .stMarkdown {
     color: #0f172a !important;
 }
 
-/* INPUT */
+/* ───────────── INPUT FIELDS ───────────── */
 .stTextArea textarea, .stTextInput input {
     background: white !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
+    padding: 10px !important;
+    transition: all 0.2s ease;
 }
 
-/* BUTTON */
+.stTextArea textarea:focus, .stTextInput input:focus {
+    border: 1px solid #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+/* ───────────── BUTTON ───────────── */
 .stButton > button {
     background: linear-gradient(to right, #2563eb, #3b82f6) !important;
     color: white !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     font-weight: 600;
     border: none;
+    padding: 10px 16px;
+    transition: all 0.2s ease;
 }
 
-/* CARD */
-.stMetric {
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* ───────────── CARDS / METRICS ───────────── */
+.stMetric, .stExpander {
     background: white !important;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    padding: 8px;
+    border-radius: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 10px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* BADGES */
+/* ───────────── SLIDERS ───────────── */
+.stSlider > div {
+    color: #2563eb !important;
+}
+
+/* ───────────── FILE UPLOADER ───────────── */
+div[data-testid="stFileUploader"] {
+    background: white;
+    border: 1px dashed #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 10px !important;
+}
+
+div[data-testid="stFileUploader"] label {
+    color: #0f172a !important;
+}
+
+/* ───────────── BADGES ───────────── */
 .badge {
     background: #dbeafe;
     color: #1e40af;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 20px;
     font-size: 12px;
+    margin: 3px;
+    display: inline-block;
 }
 
 .badge-missing {
@@ -60,24 +95,67 @@ h1, h2, h3, h4, p, label, .stMarkdown {
     color: #b91c1c;
 }
 
-/* CHAT */
+/* ───────────── CHAT UI ───────────── */
 .chat-ai {
     background: #e0f2fe;
     color: #0c4a6e;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 10px 14px;
+    border-radius: 12px 12px 12px 0;
+    margin: 6px 0;
+    max-width: 75%;
 }
 
 .chat-user {
     background: #dcfce7;
     color: #166534;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 10px 14px;
+    border-radius: 12px 12px 0 12px;
+    margin: 6px 0;
+    max-width: 75%;
+    margin-left: auto;
     text-align: right;
 }
+
+/* ───────────── VERDICT BOX ───────────── */
+.verdict-box {
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* ───────────── JD PARSED BOX ───────────── */
+.jd-parsed {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    color: #1e3a8a;
+}
+
+/* ───────────── EVALUATION RESULT ───────────── */
+.eval-result {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    color: #065f46;
+}
+
+/* ───────────── TABS ───────────── */
+button[data-baseweb="tab"] {
+    font-weight: 600;
+}
+
+/* ───────────── FOOTER ───────────── */
+footer {
+    visibility: hidden;
+}
+
 </style>
 """, unsafe_allow_html=True)
-
 # ─────────────────────────────────────────
 # Session State
 # ─────────────────────────────────────────
