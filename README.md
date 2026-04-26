@@ -6,6 +6,18 @@
 
 ---
 
+## 🌐 Live Demo
+
+👉 https://ai-talent-agent-muktha.streamlit.app/
+
+---
+
+## 🎥 Demo Video
+
+👉 https://drive.google.com/file/d/1-RqMk__cFHJIFri2RKowq_5cI1DubNVs/view?usp=sharing
+
+---
+
 ## 🧠 What is TalentAI Scout?
 
 **TalentAI Scout** is an end-to-end AI recruitment system that automates the entire hiring workflow — from **Job Description parsing** to **candidate ranking and resume evaluation**.
@@ -89,13 +101,75 @@ Simulates recruiter interaction:
 
 ## 📊 Scoring Logic
 
-| Component        | Weight |
-|-----------------|--------|
-| Skill Match      | High   |
-| Experience Fit   | Medium |
-| Interest Score   | Medium |
+The system uses a weighted scoring model:
 
-👉 **Final Score = Combined Intelligent Ranking**
+- **Skill Match Score (High Weight)**  
+  Based on overlap between JD skills and candidate skills  
+
+- **Experience Score (Medium Weight)**  
+  Based on required vs actual experience  
+
+- **Interest Score (Medium Weight)**  
+  Based on simulated candidate response  
+
+👉 **Final Score = Combined Intelligent Ranking (Skill + Experience + Interest)**  
+
+This ensures a balanced and explainable ranking system.
+
+---
+
+## 🧪 Sample Input & Output
+
+### 📥 Input (Job Description)
+Looking for a Data Analyst with Python, SQL, Excel, and 2+ years of experience.
+
+### 📤 Output
+- Candidate A → Match: 85%, Interest: 90%, Final Score: 88  
+- Candidate B → Match: 70%, Interest: 60%, Final Score: 65  
+
+👉 Candidates are automatically ranked based on final score.
+
+---
+
+## 🔄 How It Works
+
+1. Paste or upload Job Description  
+2. AI extracts skills & requirements  
+3. Candidates are matched and scored  
+4. Interest simulation is performed  
+5. Final ranked list is generated  
+6. Recruiter reviews insights and selects candidates  
+
+---
+
+## 🧠 Architecture
+
+TalentAI Scout follows a modular architecture:
+
+1. **Input Layer**
+   - Job Description (JD)
+   - Candidate Data / Resume  
+
+2. **AI Processing Layer**
+   - JD Parsing (Gemini API)  
+   - Skill & Experience Extraction  
+   - Resume Parsing  
+
+3. **Matching Engine**
+   - Skill Matching Algorithm  
+   - Experience Scoring  
+   - Gap Analysis  
+
+4. **Engagement Layer**
+   - Simulated Candidate Interaction  
+   - Interest Score Calculation  
+
+5. **Ranking Engine**
+   - Final Score = Match Score + Interest Score  
+
+6. **Output Layer**
+   - Ranked Candidates  
+   - Recruiter Insights  
 
 ---
 
@@ -113,11 +187,11 @@ Simulates recruiter interaction:
 ```
 ai-talent-scout/
 │
-├── app.py              # Streamlit UI
-├── brain.py            # AI logic + scoring engine
-├── candidates.json     # Candidate dataset
-├── requirements.txt
-└── README.md
+├── app.py              # Streamlit UI  
+├── brain.py            # AI logic + scoring engine  
+├── candidates.json     # Candidate dataset  
+├── requirements.txt  
+└── README.md  
 ```
 
 ---
@@ -153,6 +227,9 @@ streamlit run app.py
 
 **Mukthanjali Bonala**  
 Aspiring Data Analyst | AI Enthusiast  
+
+🔗 GitHub: https://github.com/mukthanjali-data  
+🔗 LinkedIn: https://www.linkedin.com/in/mukthanjalibonala  
 
 ---
 
