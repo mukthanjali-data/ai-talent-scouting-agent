@@ -12,168 +12,46 @@ st.set_page_config(page_title="TalentAI Scout", layout="wide", page_icon="🤖")
 st.markdown("""
 <style>
 
-/* ───────────── GLOBAL ───────────── */
-.stApp {
-    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
-    font-family: 'Inter', sans-serif;
-}
-
-/* ───────────── HEADINGS ───────────── */
-h1 {
-    font-size: 32px !important;
-    font-weight: 700 !important;
-    color: #0f172a !important;
-}
-
-h2, h3, h4 {
-    color: #1e293b !important;
-    font-weight: 600 !important;
-}
-
-p, label {
-    color: #475569 !important;
-}
-
-/* ───────────── TOP HEADER BAR ───────────── */
-.block-container {
-    padding-top: 2rem;
-}
-
-/* ───────────── CARD STYLE ───────────── */
-.stMetric, .stExpander {
-    background: white !important;
-    border-radius: 16px !important;
-    padding: 16px !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    transition: 0.3s ease;
-}
-
-.stMetric:hover, .stExpander:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.08);
-}
-
-/* ───────────── INPUTS ───────────── */
-.stTextArea textarea, .stTextInput input {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 12px !important;
-    padding: 12px !important;
-    font-size: 14px;
-}
-
-.stTextArea textarea:focus, .stTextInput input:focus {
-    border: 1px solid #6366f1 !important;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-}
-
-/* ───────────── BUTTON ───────────── */
-.stButton > button {
-    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+/* ───────────── EVALUATE BUTTON (SPECIAL STYLE) ───────────── */
+button[kind="primary"] {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
     color: white !important;
     border-radius: 12px !important;
     font-weight: 600;
-    padding: 12px;
     border: none;
-    transition: all 0.25s ease;
 }
 
-.stButton > button:hover {
-    transform: translateY(-2px);
+button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
     box-shadow: 0 8px 20px rgba(79,70,229,0.4);
 }
 
-/* ───────────── FILE UPLOADER ───────────── */
-div[data-testid="stFileUploader"] {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    border-radius: 14px !important;
-    padding: 18px !important;
-    color: white !important;
-    border: none !important;
-}
 
-div[data-testid="stFileUploader"] label {
+/* ───────────── FILE UPLOADER TEXT FIX ───────────── */
+div[data-testid="stFileUploader"] * {
     color: white !important;
 }
 
-/* ───────────── SLIDERS ───────────── */
-.stSlider > div {
-    color: #4f46e5 !important;
+/* Upload button inside uploader */
+div[data-testid="stFileUploader"] button {
+    background: #1e293b !important;
+    color: white !important;
+    border: 1px solid #334155 !important;
 }
 
-/* ───────────── BADGES ───────────── */
-.badge {
-    background: #e0e7ff;
-    color: #3730a3;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    margin: 4px;
-    font-weight: 500;
+/* Small helper text (200MB...) */
+div[data-testid="stFileUploader"] small {
+    color: #cbd5f5 !important;
 }
 
-.badge-missing {
-    background: #fee2e2;
-    color: #991b1b;
+
+/* ───────────── TEXTAREA BORDER IMPROVEMENT ───────────── */
+textarea {
+    border: 2px solid #cbd5e1 !important;
 }
 
-/* ───────────── CHAT ───────────── */
-.chat-ai {
-    background: #eef2ff;
-    color: #1e3a8a;
-    padding: 12px;
-    border-radius: 14px 14px 14px 4px;
-    margin: 6px 0;
-    max-width: 75%;
-}
-
-.chat-user {
-    background: #dcfce7;
-    color: #166534;
-    padding: 12px;
-    border-radius: 14px 14px 4px 14px;
-    margin: 6px 0;
-    max-width: 75%;
-    margin-left: auto;
-    text-align: right;
-}
-
-/* ───────────── JD PARSED BOX ───────────── */
-.jd-parsed {
-    background: linear-gradient(to right, #4f46e5, #6366f1);
-    color: white;
-    padding: 14px;
-    border-radius: 12px;
-    margin: 10px 0;
-}
-
-/* ───────────── EVAL BOX ───────────── */
-.eval-result {
-    background: linear-gradient(to right, #10b981, #059669);
-    color: white;
-    padding: 14px;
-    border-radius: 12px;
-}
-
-/* ───────────── TABS ───────────── */
-button[data-baseweb="tab"] {
-    font-weight: 600;
-}
-
-/* ───────────── REMOVE STREAMLIT FOOTER ───────────── */
-footer {
-    visibility: hidden;
-}
-
-/* ───────────── SCROLLBAR ───────────── */
-::-webkit-scrollbar {
-    width: 6px;
-}
-::-webkit-scrollbar-thumb {
-    background: #c7d2fe;
-    border-radius: 10px;
+textarea:focus {
+    border: 2px solid #6366f1 !important;
 }
 
 </style>
