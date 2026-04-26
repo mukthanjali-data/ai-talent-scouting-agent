@@ -1,162 +1,22 @@
 [
-  {
-    "name": "Rohit Sharma",
-    "skills": ["sales", "crm", "lead generation", "negotiation", "target achievement"],
-    "experience": 6,
-    "location": "Mumbai",
-    "notice_period": "30 days",
-    "expected_ctc": "12 LPA"
-  },
-  {
-    "name": "Priya Nair",
-    "skills": ["sales", "communication", "client handling", "crm"],
-    "experience": 4,
-    "location": "Bangalore",
-    "notice_period": "45 days",
-    "expected_ctc": "8 LPA"
-  },
-  {
-    "name": "Vikram Singh",
-    "skills": ["sales", "crm", "field sales", "target achievement", "negotiation"],
-    "experience": 5,
-    "location": "Delhi",
-    "notice_period": "30 days",
-    "expected_ctc": "10 LPA"
-  },
-  {
-    "name": "Arjun Mehta",
-    "skills": ["sql", "excel", "data analysis", "reporting", "python"],
-    "experience": 5,
-    "location": "Hyderabad",
-    "notice_period": "60 days",
-    "expected_ctc": "14 LPA"
-  },
-  {
-    "name": "Deepa Iyer",
-    "skills": ["python", "sql", "data visualization", "machine learning", "excel"],
-    "experience": 4,
-    "location": "Bangalore",
-    "notice_period": "30 days",
-    "expected_ctc": "12 LPA"
-  },
-  {
-    "name": "Akash Patel",
-    "skills": ["python", "sql", "excel", "power bi", "tableau", "data analysis"],
-    "experience": 3,
-    "location": "Pune",
-    "notice_period": "Immediate",
-    "expected_ctc": "7 LPA"
-  },
-  {
-    "name": "Sneha Verma",
-    "skills": ["tableau", "data visualization", "sql", "excel", "power bi"],
-    "experience": 3,
-    "location": "Hyderabad",
-    "notice_period": "30 days",
-    "expected_ctc": "7 LPA"
-  },
-  {
-    "name": "Rahul Gupta",
-    "skills": ["machine learning", "python", "statistics", "sql", "deep learning"],
-    "experience": 2,
-    "location": "Bangalore",
-    "notice_period": "Immediate",
-    "expected_ctc": "6 LPA"
-  },
-  {
-    "name": "Neha Joshi",
-    "skills": ["excel", "sql", "business analysis", "documentation", "reporting"],
-    "experience": 3,
-    "location": "Chennai",
-    "notice_period": "30 days",
-    "expected_ctc": "6 LPA"
-  },
-  {
-    "name": "Karthik Reddy",
-    "skills": ["business analysis", "stakeholder management", "excel", "sql", "documentation"],
-    "experience": 4,
-    "location": "Hyderabad",
-    "notice_period": "45 days",
-    "expected_ctc": "9 LPA"
-  },
-  {
-    "name": "Meena Kumari",
-    "skills": ["excel", "data entry", "reporting", "sql"],
-    "experience": 1,
-    "location": "Pune",
-    "notice_period": "Immediate",
-    "expected_ctc": "3 LPA"
-  },
-  {
-    "name": "Suresh Kumar",
-    "skills": ["operations", "reporting", "process management", "excel"],
-    "experience": 2,
-    "location": "Mumbai",
-    "notice_period": "30 days",
-    "expected_ctc": "5 LPA"
-  },
-  {
-    "name": "Anjali Verma",
-    "skills": ["digital marketing", "seo", "social media", "campaign management", "analytics"],
-    "experience": 3,
-    "location": "Delhi",
-    "notice_period": "30 days",
-    "expected_ctc": "6 LPA"
-  },
-  {
-    "name": "Rakesh Singh",
-    "skills": ["marketing", "campaign management", "analytics", "seo", "digital marketing"],
-    "experience": 5,
-    "location": "Bangalore",
-    "notice_period": "60 days",
-    "expected_ctc": "11 LPA"
-  },
-  {
-    "name": "Pooja Sharma",
-    "skills": ["hr", "recruitment", "communication", "screening"],
-    "experience": 2,
-    "location": "Hyderabad",
-    "notice_period": "Immediate",
-    "expected_ctc": "4 LPA"
-  },
-  {
-    "name": "Manish Yadav",
-    "skills": ["talent acquisition", "screening", "interviewing", "hr", "recruitment"],
-    "experience": 4,
-    "location": "Mumbai",
-    "notice_period": "30 days",
-    "expected_ctc": "9 LPA"
-  },
-  {
-    "name": "Arun Tiwari",
-    "skills": ["python", "sql", "excel", "power bi", "machine learning", "tableau", "aws"],
-    "experience": 7,
-    "location": "Delhi",
-    "notice_period": "90 days",
-    "expected_ctc": "22 LPA"
-  },
-  {
-    "name": "Divya Krishnan",
-    "skills": ["power bi", "sql", "excel", "tableau", "data analysis", "python"],
-    "experience": 3,
-    "location": "Chennai",
-    "notice_period": "30 days",
-    "expected_ctc": "8 LPA"
-  },
-  {
-    "name": "Suresh Babu",
-    "skills": ["python", "machine learning", "sql", "excel", "power bi", "deep learning"],
-    "experience": 5,
-    "location": "Hyderabad",
-    "notice_period": "45 days",
-    "expected_ctc": "14 LPA"
-  },
-  {
-    "name": "Kavitha Menon",
-    "skills": ["excel", "power bi", "sql", "tableau", "data analysis", "reporting"],
-    "experience": 6,
-    "location": "Kochi",
-    "notice_period": "60 days",
-    "expected_ctc": "12 LPA"
-  }
+  { "name": "Rohit Sharma", "skills": ["sales", "crm", "lead generation", "negotiation", "target achievement"], "experience": 6, "location": "Mumbai", "notice_period": "30 days", "expected_ctc": "12 LPA" },
+  { "name": "Priya Nair", "skills": ["sales", "communication", "client handling", "crm"], "experience": 4, "location": "Bangalore", "notice_period": "45 days", "expected_ctc": "8 LPA" },
+  { "name": "Vikram Singh", "skills": ["sales", "crm", "field sales", "target achievement", "negotiation"], "experience": 5, "location": "Delhi", "notice_period": "30 days", "expected_ctc": "10 LPA" },
+  { "name": "Arjun Mehta", "skills": ["sql", "excel", "data analysis", "reporting", "python"], "experience": 5, "location": "Hyderabad", "notice_period": "60 days", "expected_ctc": "14 LPA" },
+  { "name": "Deepa Iyer", "skills": ["python", "sql", "data visualization", "machine learning", "excel"], "experience": 4, "location": "Bangalore", "notice_period": "30 days", "expected_ctc": "12 LPA" },
+  { "name": "Akash Patel", "skills": ["python", "sql", "excel", "power bi", "tableau", "data analysis"], "experience": 3, "location": "Pune", "notice_period": "Immediate", "expected_ctc": "7 LPA" },
+  { "name": "Sneha Verma", "skills": ["tableau", "data visualization", "sql", "excel", "power bi"], "experience": 3, "location": "Hyderabad", "notice_period": "30 days", "expected_ctc": "7 LPA" },
+  { "name": "Rahul Gupta", "skills": ["machine learning", "python", "statistics", "sql", "deep learning"], "experience": 2, "location": "Bangalore", "notice_period": "Immediate", "expected_ctc": "6 LPA" },
+  { "name": "Neha Joshi", "skills": ["excel", "sql", "business analysis", "documentation", "reporting"], "experience": 3, "location": "Chennai", "notice_period": "30 days", "expected_ctc": "6 LPA" },
+  { "name": "Karthik Reddy", "skills": ["business analysis", "stakeholder management", "excel", "sql", "documentation"], "experience": 4, "location": "Hyderabad", "notice_period": "45 days", "expected_ctc": "9 LPA" },
+  { "name": "Meena Kumari", "skills": ["excel", "data entry", "reporting", "sql"], "experience": 1, "location": "Pune", "notice_period": "Immediate", "expected_ctc": "3 LPA" },
+  { "name": "Suresh Kumar", "skills": ["operations", "reporting", "process management", "excel"], "experience": 2, "location": "Mumbai", "notice_period": "30 days", "expected_ctc": "5 LPA" },
+  { "name": "Anjali Verma", "skills": ["digital marketing", "seo", "social media", "campaign management", "analytics"], "experience": 3, "location": "Delhi", "notice_period": "30 days", "expected_ctc": "6 LPA" },
+  { "name": "Rakesh Singh", "skills": ["marketing", "campaign management", "analytics", "seo", "digital marketing"], "experience": 5, "location": "Bangalore", "notice_period": "60 days", "expected_ctc": "11 LPA" },
+  { "name": "Pooja Sharma", "skills": ["hr", "recruitment", "communication", "screening"], "experience": 2, "location": "Hyderabad", "notice_period": "Immediate", "expected_ctc": "4 LPA" },
+  { "name": "Manish Yadav", "skills": ["talent acquisition", "screening", "interviewing", "hr", "recruitment"], "experience": 4, "location": "Mumbai", "notice_period": "30 days", "expected_ctc": "9 LPA" },
+  { "name": "Arun Tiwari", "skills": ["python", "sql", "excel", "power bi", "machine learning", "tableau", "aws"], "experience": 7, "location": "Delhi", "notice_period": "90 days", "expected_ctc": "22 LPA" },
+  { "name": "Divya Krishnan", "skills": ["power bi", "sql", "excel", "tableau", "data analysis", "python"], "experience": 3, "location": "Chennai", "notice_period": "30 days", "expected_ctc": "8 LPA" },
+  { "name": "Suresh Babu", "skills": ["python", "machine learning", "sql", "excel", "power bi", "deep learning"], "experience": 5, "location": "Hyderabad", "notice_period": "45 days", "expected_ctc": "14 LPA" },
+  { "name": "Kavitha Menon", "skills": ["excel", "power bi", "sql", "tableau", "data analysis", "reporting"], "experience": 6, "location": "Kochi", "notice_period": "60 days", "expected_ctc": "12 LPA" }
 ]
