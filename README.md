@@ -1,8 +1,7 @@
 # 🤖 TalentAI Scout  
 ### *AI-Powered Intelligent Recruitment Agent*
 
-> 🚀 Hire smarter. Faster. Better.  
-> 🚀 Built for Catalyst Hackathon – Deccan AI Experts  
+> 🚀 Hire smarter. Faster. Better. 
 
 ---
 
