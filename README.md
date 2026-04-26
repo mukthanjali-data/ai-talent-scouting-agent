@@ -104,12 +104,18 @@ TalentAI Scout provides **one intelligent platform** that:
 ---
 
 ## 📂 Project Structure
+
 ai-talent-scout/
 │
+
 ├── app.py # Streamlit UI
+
 ├── brain.py # AI logic + scoring engine
+
 ├── candidates.json # Candidate dataset
+
 ├── requirements.txt
+
 └── README.md
 
 
@@ -120,6 +126,8 @@ ai-talent-scout/
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
+
+
 🔥 Key Highlights
 
 ✔ AI-based JD understanding
