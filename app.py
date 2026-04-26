@@ -12,95 +12,119 @@ st.set_page_config(page_title="TalentAI Scout", layout="wide", page_icon="🤖")
 st.markdown("""
 <style>
 
-/* ───────────── APP BACKGROUND ───────────── */
+/* ───────────── GLOBAL ───────────── */
 .stApp {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+    font-family: 'Inter', sans-serif;
 }
 
-/* ───────────── TEXT ───────────── */
-h1, h2, h3, h4, p, label, .stMarkdown {
+/* ───────────── HEADINGS ───────────── */
+h1 {
+    font-size: 32px !important;
+    font-weight: 700 !important;
     color: #0f172a !important;
 }
 
-/* ───────────── INPUT FIELDS ───────────── */
-.stTextArea textarea, .stTextInput input {
+h2, h3, h4 {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+p, label {
+    color: #475569 !important;
+}
+
+/* ───────────── TOP HEADER BAR ───────────── */
+.block-container {
+    padding-top: 2rem;
+}
+
+/* ───────────── CARD STYLE ───────────── */
+.stMetric, .stExpander {
     background: white !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    transition: 0.3s ease;
+}
+
+.stMetric:hover, .stExpander:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.08);
+}
+
+/* ───────────── INPUTS ───────────── */
+.stTextArea textarea, .stTextInput input {
+    background: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 10px !important;
-    padding: 10px !important;
-    transition: all 0.2s ease;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    font-size: 14px;
 }
 
 .stTextArea textarea:focus, .stTextInput input:focus {
-    border: 1px solid #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+    border: 1px solid #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
 }
 
 /* ───────────── BUTTON ───────────── */
 .stButton > button {
-    background: linear-gradient(to right, #2563eb, #3b82f6) !important;
+    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
     color: white !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     font-weight: 600;
+    padding: 12px;
     border: none;
-    padding: 10px 16px;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 }
 
 .stButton > button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
-}
-
-/* ───────────── CARDS / METRICS ───────────── */
-.stMetric, .stExpander {
-    background: white !important;
-    border-radius: 12px !important;
-    border: 1px solid #e2e8f0 !important;
-    padding: 10px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-/* ───────────── SLIDERS ───────────── */
-.stSlider > div {
-    color: #2563eb !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79,70,229,0.4);
 }
 
 /* ───────────── FILE UPLOADER ───────────── */
 div[data-testid="stFileUploader"] {
-    background: white;
-    border: 1px dashed #cbd5e1 !important;
-    border-radius: 10px !important;
-    padding: 10px !important;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-radius: 14px !important;
+    padding: 18px !important;
+    color: white !important;
+    border: none !important;
 }
 
 div[data-testid="stFileUploader"] label {
-    color: #0f172a !important;
+    color: white !important;
+}
+
+/* ───────────── SLIDERS ───────────── */
+.stSlider > div {
+    color: #4f46e5 !important;
 }
 
 /* ───────────── BADGES ───────────── */
 .badge {
-    background: #dbeafe;
-    color: #1e40af;
-    padding: 5px 12px;
-    border-radius: 20px;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 6px 14px;
+    border-radius: 999px;
     font-size: 12px;
-    margin: 3px;
-    display: inline-block;
+    margin: 4px;
+    font-weight: 500;
 }
 
 .badge-missing {
     background: #fee2e2;
-    color: #b91c1c;
+    color: #991b1b;
 }
 
-/* ───────────── CHAT UI ───────────── */
+/* ───────────── CHAT ───────────── */
 .chat-ai {
-    background: #e0f2fe;
-    color: #0c4a6e;
-    padding: 10px 14px;
-    border-radius: 12px 12px 12px 0;
+    background: #eef2ff;
+    color: #1e3a8a;
+    padding: 12px;
+    border-radius: 14px 14px 14px 4px;
     margin: 6px 0;
     max-width: 75%;
 }
@@ -108,40 +132,29 @@ div[data-testid="stFileUploader"] label {
 .chat-user {
     background: #dcfce7;
     color: #166534;
-    padding: 10px 14px;
-    border-radius: 12px 12px 0 12px;
+    padding: 12px;
+    border-radius: 14px 14px 4px 14px;
     margin: 6px 0;
     max-width: 75%;
     margin-left: auto;
     text-align: right;
 }
 
-/* ───────────── VERDICT BOX ───────────── */
-.verdict-box {
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 15px;
-    font-weight: 600;
-}
-
 /* ───────────── JD PARSED BOX ───────────── */
 .jd-parsed {
-    background: #eff6ff;
-    border-left: 4px solid #3b82f6;
-    border-radius: 8px;
-    padding: 12px;
+    background: linear-gradient(to right, #4f46e5, #6366f1);
+    color: white;
+    padding: 14px;
+    border-radius: 12px;
     margin: 10px 0;
-    color: #1e3a8a;
 }
 
-/* ───────────── EVALUATION RESULT ───────────── */
+/* ───────────── EVAL BOX ───────────── */
 .eval-result {
-    background: #ecfdf5;
-    border-left: 4px solid #10b981;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 10px 0;
-    color: #065f46;
+    background: linear-gradient(to right, #10b981, #059669);
+    color: white;
+    padding: 14px;
+    border-radius: 12px;
 }
 
 /* ───────────── TABS ───────────── */
@@ -149,9 +162,18 @@ button[data-baseweb="tab"] {
     font-weight: 600;
 }
 
-/* ───────────── FOOTER ───────────── */
+/* ───────────── REMOVE STREAMLIT FOOTER ───────────── */
 footer {
     visibility: hidden;
+}
+
+/* ───────────── SCROLLBAR ───────────── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 10px;
 }
 
 </style>
