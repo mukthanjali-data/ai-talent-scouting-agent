@@ -1,12 +1,16 @@
-from google import genai
+try:
+    from google import genai
+except:
+    genai = None
 import json
 import os
 import re
 from dotenv import load_dotenv
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
+client = None
+if genai:
+    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 # ─────────────────────────────────────────
 # Fallback extractors
 # ─────────────────────────────────────────
@@ -105,16 +109,29 @@ JD:
 """
 
     try:
+    if client:
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt,
-            config={"response_mime_type": "application/json"}  # ✅ FIXED
+            config={"response_mime_type": "application/json"}
         )
-
         d = json.loads(response.text)
+    else:
+        raise Exception("No API")
 
-        skills  = d.get("skills") or fallback_skills
-        exp_min = int(d.get("exp_min") or fallback_exp[0])
+    # ✅ MUST BE OUTSIDE ELSE
+    skills = d.get("skills") or fallback_skills
+    exp_min = int(d.get("exp_min") or fallback_exp[0])
+    exp_max = int(d.get("exp_max") or fallback_exp[1])
+
+    role = d.get("role", "").strip()
+    if not role or role.lower() in ["unknown", "n/a", ""]:
+        role = fallback_role
+
+    return normalize_skills(skills[:8]), (exp_min, exp_max), role
+
+except:
+    return normalize_skills(fallback_skills[:8]), (fallback_exp[0], fallback_exp[1]), fallback_role
         exp_max = int(d.get("exp_max") or fallback_exp[1])
 
         role = d.get("role", "").strip()
