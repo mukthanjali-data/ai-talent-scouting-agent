@@ -261,7 +261,7 @@ with tab1:
                     results = []
                     prog = st.progress(0)
                     for i, c in enumerate(candidates):
-                        res      = analyze_candidate(jd, c, req_skills, req_exp, req_role)
+                        res = analyze_candidate(c, req_skills, req_exp, req_role)
                         interest = st.session_state.interest_scores.get(c["name"], 50)
                         final    = round(0.65 * res["match_score"] + 0.35 * interest, 2)
                         results.append({
