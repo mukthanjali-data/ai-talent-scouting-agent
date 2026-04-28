@@ -1,11 +1,17 @@
 import google.generativeai as genai
+import os
+
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+model = genai.GenerativeModel("gemini-pro")
 import json
 import os
 import re
 from dotenv import load_dotenv
 load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel("gemini-pro")
 
 # ─────────────────────────────────────────
 # Fallback extractors
@@ -176,15 +182,12 @@ Write exactly 2 short sentences:
 Be direct and professional.
 """
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
-        text = response.text.strip()
+        response = model.generate_content(prompt)
+text = response.text.strip()
         if text and len(text) > 20:
             return text
         raise ValueError("Too short")
-    except Exception:
+    except Exception
         fit  = "strong" if match_score >= 70 else "partial" if match_score >= 50 else "weak"
         top3 = ", ".join(candidate_skills[:3]) if candidate_skills else "general skills"
         action = "Recommend for interview." if match_score >= 60 else "Consider for future openings."
@@ -276,11 +279,16 @@ Return ONLY JSON:
 - Negative: -20 to -10
 """
     try:
-        r = client.models.generate_content(
-            model="gemini-1.5-flash", contents=prompt,
-            config={{"response_mime_type": "application/json"}}
-        )
-        result = json.loads(r.text)
+        response = model.generate_content(prompt)
+
+try:
+    result = json.loads(response.text)
+except:
+    result = {
+        "interest_delta": 0,
+        "ai_followup": "Thank you for sharing that!",
+        "sentiment": "neutral"
+    }
         if not result.get("ai_followup"):
             result["ai_followup"] = "Thank you for sharing that!"
         return result
@@ -299,11 +307,12 @@ Return ONLY JSON: {{"score": <0-100>}}
 - Enthusiastic: 80-100, Open: 60-79, Vague: 40-59, Hesitant: 20-39, Negative: 0-19
 """
     try:
-        r = client.models.generate_content(
-            model="gemini-1.5-flash", contents=prompt,
-            config={{"response_mime_type": "application/json"}}
-        )
-        return int(json.loads(r.text).get("score", 50))
+        response = model.generate_content(prompt)
+
+try:
+    return int(json.loads(response.text).get("score", 50))
+except:
+    return 50
     except Exception:
         ans = answer.lower()
         if any(w in ans for w in ["yes","sure","interested","open","excited","love","happy"]):
