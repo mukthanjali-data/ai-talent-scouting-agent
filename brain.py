@@ -121,16 +121,50 @@ Write 2 short sentences: fit + action.
 # ─────────────────────────────────────────
 # Analyze structured candidate
 # ─────────────────────────────────────────
-def analyze_candidate(jd_text, candidate):
-    skills, exp_range, role = extract_requirements(jd_text)
+def analyze_candidate(*args):
+    """
+    Handles both:
+    1) analyze_candidate(jd_text, candidate)
+    2) analyze_candidate(candidate, skills, exp, role)
+    3) analyze_candidate(jd, candidate, skills, exp, role)
+    """
 
+    # Case 1: Full 5 args (your current app call)
+    if len(args) == 5:
+        _, candidate, skills, exp_range, role = args
+
+    # Case 2: Clean 4 args
+    elif len(args) == 4:
+        candidate, skills, exp_range, role = args
+
+    # Case 3: Only JD + candidate
+    elif len(args) == 2:
+        jd_text, candidate = args
+        skills, exp_range, role = extract_requirements(jd_text)
+
+    else:
+        raise ValueError("Invalid arguments passed to analyze_candidate")
+
+    # Scoring
     score, matched, missing = _score(
-        skills, exp_range,
-        candidate["skills"], candidate["experience"]
+        skills,
+        exp_range,
+        candidate.get("skills", []),
+        candidate.get("experience", 0)
     )
 
-    note = _ai_note(role, skills, candidate["name"],
-                    candidate["skills"], candidate["experience"], score)
+    # AI note (safe fallback)
+    try:
+        note = _ai_note(
+            role,
+            skills,
+            candidate.get("name", "Candidate"),
+            candidate.get("skills", []),
+            candidate.get("experience", 0),
+            score
+        )
+    except:
+        note = f"{candidate.get('name','Candidate')} shows a {score}% match."
 
     return {
         "match_score": score,
